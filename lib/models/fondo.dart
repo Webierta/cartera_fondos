@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class Fondo {
   final String isin;
   final String name;
@@ -6,14 +8,19 @@ class Fondo {
 
   int participaciones = 0;
   var historicoValores = <DateTime, double>{};
-  double _saldo = 0;
+  double _patrimonio = 0;
   // rentabilidad
   // otros índices
 
-  double get saldo => _saldo;
+  double get patrimonio => _patrimonio;
 
-  set saldo(double valorLiquidativo) {
-    _saldo = participaciones * valorLiquidativo;
+  set patrimonio(double valorLiquidativo) {
+    _patrimonio = participaciones * valorLiquidativo;
+  }
+
+  update() {
+    // get fecha + VL
+    // historicoValores[fecha] = VL
   }
 
   DateTime? fechaSubscribe;
@@ -28,5 +35,10 @@ class Fondo {
   aportar(DateTime fecha, int cantidad) {
     participaciones = participaciones + cantidad;
     aportaciones[fecha] = cantidad;
+  }
+
+  exportar() {
+    // exportar a csv
+    // isin.csv
   }
 }
