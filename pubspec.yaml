@@ -1,5 +1,5 @@
 name: cartera_fondos
-description: Gestión de una Cartera de Fondos de Inversión.
+description: Gestión de Carteras de Fondos de Inversión.
 
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -38,6 +38,7 @@ dependencies:
   sqflite: ^2.0.2+1
   path: ^1.8.0
   provider: ^6.0.2
+  change_app_package_name: ^1.0.0
 
 dev_dependencies:
   flutter_test:
@@ -64,6 +65,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - .env
+    - assets/
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 

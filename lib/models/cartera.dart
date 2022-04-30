@@ -4,7 +4,6 @@ import 'fondo.dart';
 
 class Cartera with ChangeNotifier {
   final String name;
-
   Cartera({required this.name});
 
   Map<String, dynamic> toMap() {
@@ -12,8 +11,14 @@ class Cartera with ChangeNotifier {
   }
 
   final _fondos = <Fondo>[];
+  //List get fondos => _fondos;
+  List<Fondo> get fondos {
+    return [..._fondos];
+  }
 
-  List get fondos => _fondos;
+  int get fondosCount {
+    return _fondos.length;
+  }
 
   addFondo(Fondo fondo) {
     _fondos.add(fondo);
@@ -38,6 +43,34 @@ class Cartera with ChangeNotifier {
   }
 
   remove() {
+    notifyListeners();
+  }
+}
+
+class Carteras with ChangeNotifier {
+  //final String name;
+  //Cartera({required this.name});
+  /*Map<String, dynamic> toMap() {
+    return {'name': name};
+  }*/
+
+  final List<Cartera> _carteras = [];
+
+  List<Cartera> get carteras {
+    return [..._carteras];
+  }
+
+  int get carterasCount {
+    return _carteras.length;
+  }
+
+  addCartera(Cartera cartera) {
+    _carteras.add(cartera);
+    notifyListeners();
+  }
+
+  removeCartera(Cartera cartera) {
+    _carteras.remove(cartera);
     notifyListeners();
   }
 }

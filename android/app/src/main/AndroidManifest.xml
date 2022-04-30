@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.github.webierta.cartera_fondos.cartera_fondos">
+    package="com.github.webierta.cartera_fondos">
    <application
-        android:label="cartera_fondos"
+        android:label="Cartera Fondos"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

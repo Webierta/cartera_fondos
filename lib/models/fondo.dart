@@ -6,6 +6,10 @@ class Fondo {
 
   Fondo({required this.isin, required this.name});
 
+  Map<String, dynamic> toMap() {
+    return {'isin': isin, 'name': name};
+  }
+
   int participaciones = 0;
   var historicoValores = <DateTime, double>{};
   double _patrimonio = 0;

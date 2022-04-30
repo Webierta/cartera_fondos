@@ -9,9 +9,9 @@ class PageFondo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('FONDO')),
+      appBar: AppBar(title: Text(fondo.isin)),
       body: Center(
-        child: Text('FONDO'),
+        child: Text(fondo.name),
       ),
     );
   }

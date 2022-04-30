@@ -48,6 +48,7 @@ class MyDrawer extends StatelessWidget {
             leading: const Icon(Icons.info_outline),
             title: const Text('Info'),
             onTap: () {
+              Navigator.of(context).pop();
               Navigator.of(context).pushNamed(RouteGenerator.infoPage);
             },
           ),
@@ -55,6 +56,7 @@ class MyDrawer extends StatelessWidget {
             leading: const Icon(Icons.code),
             title: const Text('About'),
             onTap: () {
+              Navigator.of(context).pop();
               Navigator.of(context).pushNamed(RouteGenerator.aboutPage);
             },
           ),
@@ -62,12 +64,16 @@ class MyDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.local_cafe_outlined),
             title: const Text('Donar'),
-            onTap: () {},
+            onTap: () {
+              Navigator.of(context).pop();
+            },
           ),
           ListTile(
             leading: const Icon(Icons.exit_to_app),
-            title: Text('Salir'),
-            onTap: () {},
+            title: const Text('Salir'),
+            onTap: () {
+              Navigator.of(context).pop();
+            },
           ),
         ],
       ),
