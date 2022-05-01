@@ -250,15 +250,14 @@ class _PageHomeState extends State<PageHome> {
                     //print(nFondos);
                     //int n = await _sqlite.getNumberFondos(carteras[index]);
                     //print(n);
-                    int n = mapCarteras[carteras[index].name]?.length ?? 0;
+                    int nFondos = mapCarteras[carteras[index].name]?.length ?? 0;
                     return Dismissible(
                       key: UniqueKey(),
                       direction: DismissDirection.endToStart,
                       child: Card(
                         child: ListTile(
                           // numero de fondos,
-                          //leading: CircleAvatar(child: Text('$n')),
-                          leading: const Icon(Icons.business_center_sharp, size: 48),
+                          leading: const Icon(Icons.business_center_sharp, size: 32),
                           title: Text(carteras[index].name),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,7 +268,7 @@ class _PageHomeState extends State<PageHome> {
                               Text('Rentabilidad: 10 %'),
                             ],
                           ),
-                          trailing: CircleAvatar(child: Text('$n')),
+                          trailing: CircleAvatar(child: Text('$nFondos')),
                           onTap: () {
                             Navigator.of(context)
                                 .pushNamed(RouteGenerator.carteraPage, arguments: carteras[index]);

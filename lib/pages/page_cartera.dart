@@ -15,9 +15,10 @@ class PageCartera extends StatefulWidget {
 }
 
 class _PageCarteraState extends State<PageCartera> {
-  Fondo? _newFondo;
+  // Fondo? _newFondo;
   late SqliteService _sqlite;
   var fondos = <Fondo>[];
+  bool _fondoRepe = false;
 
   _refreshFondos(Cartera cartera) async {
     final data = await _sqlite.getFondos(cartera);
@@ -33,40 +34,38 @@ class _PageCarteraState extends State<PageCartera> {
     super.initState();
   }
 
-  void _show(BuildContext ctx, String isin) {
-    showDialog(
-      context: ctx,
-      builder: (context) {
-        return Center(
-          child: AlertDialog(
-            title: const Text('Fondo repetido'),
-            content: SingleChildScrollView(
-              child: Text('El fondo con ISIN $isin ya existe en esta cartera.'),
-            ),
-            actions: [
-              TextButton(
-                child: const Text('Cerrar'),
-                onPressed: () => Navigator.of(ctx).pop(),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.cartera.name),
+        //automaticallyImplyLeading: false,
+        //titleSpacing: 0.0,
+
+        /*title: Row(
+          children: [
+            const Icon(Icons.business_center),
+            const SizedBox(width: 10),
+            Text(widget.cartera.name),
+          ],
+        ),*/
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
             _refreshFondos(widget.cartera);
+            //ScaffoldMessenger.of(context).clearMaterialBanners();
+            ScaffoldMessenger.of(context).removeCurrentMaterialBanner();
             Navigator.of(context).pushNamed(RouteGenerator.homePage);
           },
         ),
+        title: Text(widget.cartera.name),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              // actualizar todos los fondos de la cartera
+            },
+          ),
+        ],
       ),
       body: fondos.isNotEmpty
           ? ListView.builder(
@@ -81,9 +80,11 @@ class _PageCarteraState extends State<PageCartera> {
                       title: Text(fondos[index].name),
                       subtitle: Text(fondos[index].isin),
                       onTap: () {
-                        // ir a detalle de fondo: page_fondo
-                        Navigator.of(context)
-                            .pushNamed(RouteGenerator.fondoPage, arguments: fondos[index]);
+                        ScaffoldMessenger.of(context).removeCurrentMaterialBanner();
+                        Navigator.of(context).pushNamed(
+                          RouteGenerator.fondoPage,
+                          arguments: fondos[index],
+                        );
                       },
                     ),
                   ),
@@ -123,37 +124,113 @@ class _PageCarteraState extends State<PageCartera> {
         direction: Axis.vertical,
         children: [
           FloatingActionButton(
-            heroTag: 'edit',
+            heroTag: 'searchFondo',
             child: const Icon(Icons.search),
             onPressed: () async {
+              ScaffoldMessenger.of(context).removeCurrentMaterialBanner();
               final newFondo = await Navigator.of(context).pushNamed(RouteGenerator.inputFondo);
-              //TODO: check exists fondo
-
               if (newFondo != null) {
                 for (var fondo in fondos) {
                   if (fondo.isin == (newFondo as Fondo).isin) {
-                    _show(context, (newFondo as Fondo).isin);
-                    _newFondo = null;
+                    //_show(context, (newFondo).isin);
+                    _showBanner(msg: 'El fondo con ISIN ${fondo.isin} ya existe en esta cartera.');
+                    setState(() => _fondoRepe = true);
                     break;
+                  } else {
+                    setState(() => _fondoRepe = false);
                   }
                 }
-                if (_newFondo != null) {
-                  setState(() => _newFondo = newFondo as Fondo);
-                  //_sqlite.createTableCartera(widget.cartera);
-                  _sqlite.insertFondo(widget.cartera, _newFondo as Fondo);
+                if (_fondoRepe == false) {
+                  //setState(() => _newFondo = newFondo as Fondo);
+                  ////_sqlite.createTableCartera(widget.cartera);
+                  //_sqlite.insertFondo(widget.cartera, _newFondo as Fondo);
+                  _sqlite.insertFondo(widget.cartera, newFondo as Fondo);
                   _refreshFondos(widget.cartera);
+                  _showBanner(msg: 'Fondo añadido', icon: Icons.task_alt, color: Colors.blue);
+                  //_showMsg(true);
                 }
+              } else {
+                _showBanner(msg: 'Error al añadir el fondo');
+                //_showMsg(false);
               }
             },
           ),
           const SizedBox(height: 10),
           FloatingActionButton(
-            heroTag: 'search',
-            child: const Icon(Icons.add),
-            onPressed: () {},
+            heroTag: 'addFondo',
+            child: const Icon(Icons.addchart),
+            onPressed: () {
+              ScaffoldMessenger.of(context).removeCurrentMaterialBanner();
+            },
           ),
         ],
       ),
     );
   }
+
+  void _showBanner({
+    required String msg,
+    IconData icon = Icons.error_outline,
+    MaterialColor color = Colors.red,
+  }) {
+    ScaffoldMessenger.of(context).removeCurrentMaterialBanner();
+    ScaffoldMessenger.of(context).showMaterialBanner(MaterialBanner(
+      content: Text(msg),
+      leading: Icon(icon),
+      contentTextStyle: TextStyle(
+        fontSize: 18,
+        color: color,
+        fontStyle: FontStyle.italic,
+      ),
+      actions: [
+        TextButton(
+          child: const Text('Cerrar'),
+          onPressed: () {
+            ScaffoldMessenger.of(context).clearMaterialBanners();
+          },
+        ),
+      ],
+    ));
+  }
+
+  /*void _showMsg(bool okAdd) {
+    var msg = 'Fondo añadido';
+    var icon = Icons.task_alt;
+    var color = Colors.blue;
+    if (okAdd) {
+      msg = 'Fondo añadido';
+      icon = Icons.done;
+      color = Colors.blue;
+    } else {
+      msg = 'Error al añadir el fondo';
+      icon = Icons.error_outline;
+      color = Colors.red;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg),
+    ));
+  }
+
+  void _show(BuildContext ctx, String isin) {
+    showDialog(
+      context: ctx,
+      builder: (context) {
+        return Center(
+          child: AlertDialog(
+            title: const Text('Fondo repetido'),
+            content: SingleChildScrollView(
+              child: Text('El fondo con ISIN $isin ya existe en esta cartera.'),
+            ),
+            actions: [
+              TextButton(
+                child: const Text('Cerrar'),
+                onPressed: () => Navigator.of(ctx).pop(),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }*/
 }

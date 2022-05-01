@@ -10,6 +10,8 @@ class SqliteService {
   static const table = 'Carteras';
   static const columnName = 'name';
   static const columnIsin = 'isin';
+  static const columnDate = 'date';
+  static const columnVL = 'vl';
 
   Future<Database> initDB() async {
     String path = await getDatabasesPath();
@@ -34,6 +36,17 @@ class SqliteService {
     }
   }
 
+  // TODO: cambiar nombre table a fondo.name + cartera.name
+  Future<void> createTableFondo(Fondo fondo) async {
+    final Database db = await initDB();
+    try {
+      await db.execute(
+          'CREATE TABLE IF NOT EXISTS ${fondo.isin} ($columnDate INTEGER PRIMARY KEY, $columnVL REAL NOT NULL)');
+    } on DatabaseException catch (e) {
+      print('ERROR: $e');
+    }
+  }
+
   Future<void> insertCartera(Cartera cartera) async {
     final Database db = await initDB();
     await db.insert(table, cartera.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
@@ -42,6 +55,11 @@ class SqliteService {
   Future<void> insertFondo(Cartera cartera, Fondo fondo) async {
     final Database db = await initDB();
     await db.insert(cartera.name, fondo.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> insertVL(Fondo fondo) async {
+    final Database db = await initDB();
+    await db.insert(fondo.isin, fondo.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<List<Cartera>> getCarteras() async {
