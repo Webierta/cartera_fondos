@@ -20,8 +20,8 @@ class _PageCarteraState extends State<PageCartera> {
   var fondos = <Fondo>[];
   bool _fondoRepe = false;
 
-  _refreshFondos(Cartera cartera) async {
-    final data = await _sqlite.getFondos(cartera);
+  _refreshFondos() async {
+    final data = await _sqlite.getFondos(widget.cartera);
     setState(() => fondos = data);
   }
 
@@ -29,7 +29,7 @@ class _PageCarteraState extends State<PageCartera> {
   void initState() {
     _sqlite = SqliteService();
     _sqlite.initDB().whenComplete(() async {
-      await _refreshFondos(widget.cartera);
+      await _refreshFondos();
     });
     super.initState();
   }
@@ -51,9 +51,10 @@ class _PageCarteraState extends State<PageCartera> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            _refreshFondos(widget.cartera);
+            _refreshFondos();
             //ScaffoldMessenger.of(context).clearMaterialBanners();
-            ScaffoldMessenger.of(context).removeCurrentMaterialBanner();
+            //ScaffoldMessenger.of(context).removeCurrentMaterialBanner();
+            ScaffoldMessenger.of(context).removeCurrentSnackBar();
             Navigator.of(context).pushNamed(RouteGenerator.homePage);
           },
         ),
@@ -80,10 +81,11 @@ class _PageCarteraState extends State<PageCartera> {
                       title: Text(fondos[index].name),
                       subtitle: Text(fondos[index].isin),
                       onTap: () {
-                        ScaffoldMessenger.of(context).removeCurrentMaterialBanner();
+                        //ScaffoldMessenger.of(context).removeCurrentMaterialBanner();
+                        ScaffoldMessenger.of(context).removeCurrentSnackBar();
                         Navigator.of(context).pushNamed(
                           RouteGenerator.fondoPage,
-                          arguments: fondos[index],
+                          arguments: ScreenArguments(widget.cartera, fondos[index]),
                         );
                       },
                     ),
@@ -104,7 +106,7 @@ class _PageCarteraState extends State<PageCartera> {
                     //_sqlite.deleteCartera(carteras[index].name);
                     //_refreshCarteras();
                     _sqlite.deleteFondo(widget.cartera, fondos[index]);
-                    _refreshFondos(widget.cartera);
+                    _refreshFondos();
                   },
                 );
               },
@@ -127,13 +129,15 @@ class _PageCarteraState extends State<PageCartera> {
             heroTag: 'searchFondo',
             child: const Icon(Icons.search),
             onPressed: () async {
-              ScaffoldMessenger.of(context).removeCurrentMaterialBanner();
+              //ScaffoldMessenger.of(context).removeCurrentMaterialBanner();
+              ScaffoldMessenger.of(context).removeCurrentSnackBar();
               final newFondo = await Navigator.of(context).pushNamed(RouteGenerator.inputFondo);
               if (newFondo != null) {
                 for (var fondo in fondos) {
                   if (fondo.isin == (newFondo as Fondo).isin) {
                     //_show(context, (newFondo).isin);
-                    _showBanner(msg: 'El fondo con ISIN ${fondo.isin} ya existe en esta cartera.');
+                    //_showBanner(msg: 'El fondo con ISIN ${fondo.isin} ya existe en esta cartera.');
+                    _showMsg(msg: 'El fondo con ISIN ${fondo.isin} ya existe en esta cartera.');
                     setState(() => _fondoRepe = true);
                     break;
                   } else {
@@ -145,12 +149,15 @@ class _PageCarteraState extends State<PageCartera> {
                   ////_sqlite.createTableCartera(widget.cartera);
                   //_sqlite.insertFondo(widget.cartera, _newFondo as Fondo);
                   _sqlite.insertFondo(widget.cartera, newFondo as Fondo);
-                  _refreshFondos(widget.cartera);
-                  _showBanner(msg: 'Fondo añadido', icon: Icons.task_alt, color: Colors.blue);
+                  _refreshFondos();
+
+                  //_sqlite.createTableFondo(newFondo);
+
+                  _showMsg(msg: 'Fondo añadido', icon: Icons.task_alt, color: Colors.blue);
                   //_showMsg(true);
                 }
               } else {
-                _showBanner(msg: 'Error al añadir el fondo');
+                _showMsg(msg: 'Error al añadir el fondo');
                 //_showMsg(false);
               }
             },
@@ -160,7 +167,9 @@ class _PageCarteraState extends State<PageCartera> {
             heroTag: 'addFondo',
             child: const Icon(Icons.addchart),
             onPressed: () {
-              ScaffoldMessenger.of(context).removeCurrentMaterialBanner();
+              //ScaffoldMessenger.of(context).removeCurrentMaterialBanner();
+              //ScaffoldMessenger.of(context).clearSnackBars();
+              ScaffoldMessenger.of(context).removeCurrentSnackBar();
             },
           ),
         ],
@@ -168,7 +177,7 @@ class _PageCarteraState extends State<PageCartera> {
     );
   }
 
-  void _showBanner({
+  /*void _showBanner({
     required String msg,
     IconData icon = Icons.error_outline,
     MaterialColor color = Colors.red,
@@ -191,27 +200,19 @@ class _PageCarteraState extends State<PageCartera> {
         ),
       ],
     ));
-  }
+  }*/
 
-  /*void _showMsg(bool okAdd) {
-    var msg = 'Fondo añadido';
-    var icon = Icons.task_alt;
-    var color = Colors.blue;
-    if (okAdd) {
-      msg = 'Fondo añadido';
-      icon = Icons.done;
-      color = Colors.blue;
-    } else {
-      msg = 'Error al añadir el fondo';
-      icon = Icons.error_outline;
-      color = Colors.red;
-    }
-
+  void _showMsg({
+    required String msg,
+    IconData icon = Icons.error_outline,
+    MaterialColor color = Colors.red,
+  }) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(msg),
+      backgroundColor: color,
     ));
   }
-
+/*
   void _show(BuildContext ctx, String isin) {
     showDialog(
       context: ctx,

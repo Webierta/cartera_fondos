@@ -26,7 +26,19 @@ class RouteGenerator {
       case carteraPage:
         return MaterialPageRoute(builder: (context) => PageCartera(cartera: args as Cartera));
       case fondoPage:
-        return MaterialPageRoute(builder: (context) => PageFondo(fondo: args as Fondo));
+        return MaterialPageRoute(builder: (BuildContext context) {
+          ScreenArguments argument = args as ScreenArguments;
+          //final args = ModalRoute.of(context)!.settings.arguments as ScreenArguments;
+          return PageFondo(
+            cartera: args.cartera,
+            fondo: args.fondo,
+          );
+        });
+      /*return MaterialPageRoute(
+            builder: (context) => PageFondo(
+                  cartera: args as Cartera,
+                  fondo: args as Fondo,
+                ));*/
       case inputFondo:
         return MaterialPageRoute(builder: (context) => const PageSearchFondo());
       case infoPage:
@@ -51,4 +63,11 @@ class RouteGenerator {
       );
     });
   }
+}
+
+class ScreenArguments {
+  final Cartera cartera;
+  final Fondo fondo;
+
+  ScreenArguments(this.cartera, this.fondo);
 }

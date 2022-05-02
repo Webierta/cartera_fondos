@@ -66,10 +66,10 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/data_api.dart';
+import '../models/data_api_range.dart';
 
 class ApiService {
   static const String urlFondo = 'https://funds.p.rapidapi.com/v1/fund/';
-  //static String urlHistorico = 'https://funds.p.rapidapi.com/v1/historicalPrices/LU0690375182?to=2020-12-31&from=2015-01-25';
 
   Future<DataApi?> getDataApi(String isin) async {
     var url = urlFondo + isin;
@@ -88,6 +88,43 @@ class ApiService {
       } else if (response.statusCode == 200) {
         //return DataApi.fromJson(jsonDecode(response.body));
         return dataApiFromJson(response.body);
+      }
+    } catch (e) {
+      print(e.toString());
+    }
+    /*on TimeoutException {
+      //status = Status.tiempoExcedido;
+      //return null;
+    } on SocketException {
+      //status = Status.noInternet;
+    } on Error {
+      //status = Status.error;
+    }*/
+    return null;
+  }
+
+  //static String urlHistorico = 'https://funds.p.rapidapi.com/v1/historicalPrices/LU0690375182?to=2020-12-31&from=2015-01-25';
+  Future<List<DataApiRange>?>? getDataApiRange(String isin, String to, String from) async {
+    //static String urlHistorico = 'https://funds.p.rapidapi.com/v1/historicalPrices/LU0690375182?to=2020-12-31&from=2015-01-25';
+    // https://funds.p.rapidapi.com/v1/historicalPrices/LU0690375182?to=2020-12-31&from=2015-01-25
+    String urlRange = 'https://funds.p.rapidapi.com/v1/historicalPrices/';
+    //LU0690375182?to=2020-12-31&from=2015-01-25
+    var url = urlRange + isin + '?to=2021-12-31&from=2021-01-01'; // '?to=' + to + '&from=' + from';
+    String version = dotenv.get('VERSION', fallback: 'Default');
+    Map<String, String> headers = {
+      "x-rapidapi-host": "funds.p.rapidapi.com",
+      "x-rapidapi-key": version,
+    };
+
+    try {
+      var response = await http.get(Uri.parse(url), headers: headers);
+      //.timeout(const Duration(seconds: 10));
+      print(response.statusCode);
+      if (response.body.contains('Access denied')) {
+        // status = Status.accessDenied;
+      } else if (response.statusCode == 200) {
+        //return DataApi.fromJson(jsonDecode(response.body));
+        return dataApiRangeFromJson(response.body);
       }
     } catch (e) {
       print(e.toString());

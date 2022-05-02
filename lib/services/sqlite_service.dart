@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 
 import '../models/cartera.dart';
 import '../models/fondo.dart';
+import '../models/valor.dart';
 
 class SqliteService {
   static const _databaseName = 'database.db';
@@ -11,7 +12,9 @@ class SqliteService {
   static const columnName = 'name';
   static const columnIsin = 'isin';
   static const columnDate = 'date';
-  static const columnVL = 'vl';
+  static const columnPrecio = 'precio';
+
+  // BASE DE DATOS Y TABLAS
 
   Future<Database> initDB() async {
     String path = await getDatabasesPath();
@@ -36,16 +39,18 @@ class SqliteService {
     }
   }
 
-  // TODO: cambiar nombre table a fondo.name + cartera.name
-  Future<void> createTableFondo(Fondo fondo) async {
+  Future<void> createTableFondo(Cartera cartera, Fondo fondo) async {
     final Database db = await initDB();
+    var nameTable = fondo.isin + '_' + cartera.name;
     try {
       await db.execute(
-          'CREATE TABLE IF NOT EXISTS ${fondo.isin} ($columnDate INTEGER PRIMARY KEY, $columnVL REAL NOT NULL)');
+          'CREATE TABLE IF NOT EXISTS $nameTable ($columnDate INTEGER PRIMARY KEY, $columnPrecio REAL NOT NULL)');
     } on DatabaseException catch (e) {
       print('ERROR: $e');
     }
   }
+
+  // INSERTAR DATOS
 
   Future<void> insertCartera(Cartera cartera) async {
     final Database db = await initDB();
@@ -57,10 +62,21 @@ class SqliteService {
     await db.insert(cartera.name, fondo.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  Future<void> insertVL(Fondo fondo) async {
+  Future<void> insertVL(Cartera cartera, Fondo fondo, Valor valor) async {
     final Database db = await initDB();
-    await db.insert(fondo.isin, fondo.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    var nameTable = fondo.isin + '_' + cartera.name;
+    await db.insert(nameTable, valor.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
   }
+
+  Future<void> insertListVL(Cartera cartera, Fondo fondo, List<Valor> valores) async {
+    final Database db = await initDB();
+    var nameTable = fondo.isin + '_' + cartera.name;
+    for (var valor in valores) {
+      await db.insert(nameTable, valor.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+  }
+
+  // OBTENER DATOS
 
   Future<List<Cartera>> getCarteras() async {
     final db = await initDB();
@@ -85,6 +101,24 @@ class SqliteService {
     return fondos.length;
   }
 
+  Future<List<Valor>> getValores(Cartera cartera, Fondo fondo) async {
+    final db = await initDB();
+    var nameTable = fondo.isin + '_' + cartera.name;
+    final List<Map<String, dynamic>> maps = await db.query(nameTable);
+    return List.generate(maps.length, (i) {
+      return Valor(date: maps[i][columnDate], precio: maps[i][columnPrecio]);
+    });
+  }
+
+  Future<int> getNumberValores(Cartera cartera, Fondo fondo) async {
+    var valores = <Valor>[];
+    final data = await getValores(cartera, fondo);
+    valores = data;
+    return valores.length;
+  }
+
+  // ELIMINAR DATOS
+
   Future<void> deleteCartera(Cartera cartera) async {
     final db = await initDB();
     // TODO: delete all fondos (otra funcion deletaAll)
@@ -96,6 +130,19 @@ class SqliteService {
     await db.delete(cartera.name, where: '$columnIsin = ?', whereArgs: [fondo.isin]);
   }
 
+  Future<void> clearCartera() async {
+    final db = await initDB();
+    await db.rawQuery("DELETE FROM $table");
+  }
+
+  Future<void> clearFondo(Cartera cartera, Fondo fondo) async {
+    final db = await initDB();
+    var nameTable = fondo.isin + '_' + cartera.name;
+    await db.rawQuery("DELETE FROM $nameTable");
+  }
+
+  // CONSULTAR Y REORDENAR DATOS
+
   Future<void> orderByName(List<Cartera> carteras) async {
     for (var cartera in carteras) {
       deleteCartera(cartera);
@@ -104,15 +151,5 @@ class SqliteService {
     for (var cartera in carteras) {
       insertCartera(cartera);
     }
-  }
-
-  Future<void> clearCartera() async {
-    final db = await initDB();
-    await db.rawQuery("DELETE FROM $table");
-  }
-
-  Future<void> clearFondo(Fondo fondo) async {
-    final db = await initDB();
-    await db.rawQuery("DELETE FROM ${fondo.isin}");
   }
 }

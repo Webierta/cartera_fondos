@@ -1,3 +1,4 @@
+// https://quicktype.io/
 // To parse this JSON data, do
 // final dataApi = dataApiFromJson(jsonString);
 

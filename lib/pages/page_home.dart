@@ -77,14 +77,14 @@ class _PageHomeState extends State<PageHome> {
                     });
                   },
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp('[a-zA-Z0-9_]')),
+                    FilteringTextInputFormatter.allow(RegExp('[a-zA-Z0-9]')),
                     FilteringTextInputFormatter.deny(RegExp(r'^[0-9]+')),
                   ],
                   decoration: const InputDecoration(
                     hintText: 'Nombre',
                     errorMaxLines: 4,
                     errorText: 'Nombre requerido. No debe empezar por un número.'
-                        'No admite caracteres de puntuación ni símbolos (salvo guión bajo).',
+                        'No admite caracteres de puntuación ni símbolos.',
                   ),
                 ),
                 actions: <Widget>[
@@ -103,6 +103,7 @@ class _PageHomeState extends State<PageHome> {
                       //textStyle: const TextStyle(color: Colors.white),
                     ),
                     onPressed: () {
+                      //TODO: await en sqlite ??
                       if (_controller.value.text.trim().isNotEmpty) {
                         var _input = _controller.value.text;
                         /*INNECESARIO PORQUE NO SE ADMITEN ESTOS CARACTERES
