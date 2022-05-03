@@ -69,11 +69,14 @@ import '../models/data_api.dart';
 import '../models/data_api_range.dart';
 
 class ApiService {
-  static const String urlFondo = 'https://funds.p.rapidapi.com/v1/fund/';
+  //static const String urlFondo = 'https://funds.p.rapidapi.com/v1/fund/';
+
+  static String version = dotenv.get('VERSION', fallback: 'Default');
 
   Future<DataApi?> getDataApi(String isin) async {
+    const String urlFondo = 'https://funds.p.rapidapi.com/v1/fund/';
     var url = urlFondo + isin;
-    String version = dotenv.get('VERSION', fallback: 'Default');
+    //String version = dotenv.get('VERSION', fallback: 'Default');
     Map<String, String> headers = {
       "x-rapidapi-host": "funds.p.rapidapi.com",
       "x-rapidapi-key": version,
@@ -110,7 +113,7 @@ class ApiService {
     String urlRange = 'https://funds.p.rapidapi.com/v1/historicalPrices/';
     //LU0690375182?to=2020-12-31&from=2015-01-25
     var url = urlRange + isin + '?to=2021-12-31&from=2021-01-01'; // '?to=' + to + '&from=' + from';
-    String version = dotenv.get('VERSION', fallback: 'Default');
+    //String version = dotenv.get('VERSION', fallback: 'Default');
     Map<String, String> headers = {
       "x-rapidapi-host": "funds.p.rapidapi.com",
       "x-rapidapi-key": version,

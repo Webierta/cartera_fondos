@@ -10,13 +10,27 @@ class Fondo {
     return {'isin': isin, 'name': name};
   }
 
+  Map<String, dynamic> toMapDataApi() {
+    return {
+      'isin': isin,
+      'name': name,
+      'moneda': moneda,
+      'lastPrecio': lastPrecio,
+      'lastDate': lastDate
+    };
+  }
+
   Map<String, dynamic> toMapVL() {
     return {'date': valor, 'name': name};
   }
 
+  String? moneda;
+  double? lastPrecio;
+  int? lastDate;
+
   int participaciones = 0;
   // enum ??
-  String moneda = 'EUR';
+
   var valor = <int, double>{};
   final _historico = <Map<int, double>>[];
   double _patrimonio = 0;

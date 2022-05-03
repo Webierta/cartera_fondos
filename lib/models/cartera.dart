@@ -3,8 +3,19 @@ import 'package:flutter/material.dart';
 import 'fondo.dart';
 
 class Cartera with ChangeNotifier {
+  //TODO: añadir string nameInput
   final String name;
   Cartera({required this.name});
+
+  /*final String input;
+  String name = '';
+  Cartera({required this.input}) {
+    */ /*var noSpaces = input.trim();
+    var alpha = noSpaces.replaceAll(RegExp('[^a-zA-Z0-9]'), '');
+    var starNum = alpha.startsWith(RegExp(r'[0-9]')) ? '_$alpha' : alpha;
+    name = starNum;*/ /*
+    name = 'BD' + input.trim().replaceAll(RegExp('[^a-zA-Z0-9]'), '');
+  }*/
 
   Map<String, dynamic> toMap() {
     return {'name': name};

@@ -85,6 +85,7 @@ class _PageHomeState extends State<PageHome> {
                     errorMaxLines: 4,
                     errorText: 'Nombre requerido. No debe empezar por un número.'
                         'No admite caracteres de puntuación ni símbolos.',
+                    //errorText: 'Nombre requerido',
                   ),
                 ),
                 actions: <Widget>[
@@ -104,6 +105,7 @@ class _PageHomeState extends State<PageHome> {
                     ),
                     onPressed: () {
                       //TODO: await en sqlite ??
+                      //TODO: enviar cartera input y alli generar cartera name
                       if (_controller.value.text.trim().isNotEmpty) {
                         var _input = _controller.value.text;
                         /*INNECESARIO PORQUE NO SE ADMITEN ESTOS CARACTERES

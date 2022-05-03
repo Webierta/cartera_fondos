@@ -25,7 +25,16 @@ class PageFondo extends StatefulWidget {
 class _PageFondoState extends State<PageFondo> {
   late SqliteService _sqlite;
   var valores = <Valor>[];
-  Valor? lastValor;
+  var valoresCopy = <Valor>[];
+  // TODO lastValor ????? mejor lastPrecio + lastDate
+  //Valor? lastValor;
+
+  String? moneda;
+  double? lastPrecio;
+  int? lastDate;
+
+  int participaciones = 0;
+
   bool loading = true;
   String msgLoading = '';
 
@@ -40,24 +49,32 @@ class _PageFondoState extends State<PageFondo> {
     setState(() {
       msgLoading = 'Obteniendo datos...';
     });
-    final data =
-        await _sqlite.getValores(widget.cartera, widget.fondo).whenComplete(() => setState(() {
+    final data = await _sqlite
+        .getValoresByOrder(widget.cartera, widget.fondo)
+        .whenComplete(() => setState(() {
               loading = false;
               msgLoading = '';
             }));
+    //TODO: si moneda, lastPrecio y LastDate == null hacer un update
+    if (widget.fondo.moneda == null) {}
+
     //TODO: check si data no es null ??
-    setState(() => valores = data);
-    if (valores.isNotEmpty) {
+    setState(() {
+      valores = data;
+      valoresCopy = [...valores];
+    });
+
+    /*if (valores.isNotEmpty) {
       //TODO: ordenar primero por date
       setState(() {
         lastValor = valores.last;
       });
-    }
+    }*/
   }
 
-  Future<List<Valor>> _getValores() async {
+  /*Future<List<Valor>> _getValores() async {
     return await _sqlite.getValores(widget.cartera, widget.fondo);
-  }
+  }*/
 
   @override
   void initState() {
@@ -70,6 +87,9 @@ class _PageFondoState extends State<PageFondo> {
     apiService = ApiService();
     super.initState();
   }
+
+  int _currentSortColumn = 0;
+  bool _isSortAsc = true;
 
   @override
   Widget build(BuildContext context) {
@@ -86,9 +106,30 @@ class _PageFondoState extends State<PageFondo> {
                 //dataApi = getDataApi;
                 //widget.fondo.insertVL(dataApi?.epochSecs as int, dataApi?.price as double);
                 var newValor = Valor(date: getDataApi.epochSecs, precio: getDataApi.price);
+                var newMoneda = getDataApi.market;
+                var newLastPrecio = getDataApi.price;
+                var newLastDate = getDataApi.epochSecs;
+
+                setState(() {
+                  widget.fondo.moneda = newMoneda;
+                  moneda = newMoneda;
+                  widget.fondo.lastPrecio = newLastPrecio;
+                  lastPrecio = newLastPrecio;
+                  widget.fondo.lastDate = newLastDate;
+                  lastDate = newLastDate;
+                });
+                _sqlite.insertDataApi(
+                  widget.cartera,
+                  widget.fondo,
+                  moneda: newMoneda,
+                  lastPrecio: newLastPrecio,
+                  lastDate: newLastDate,
+                );
+
                 //TODO check newvalor repetido por date ??
-                setState(() => lastValor = newValor);
+                //setState(() => lastValor = newValor);
                 _sqlite.insertVL(widget.cartera, widget.fondo, newValor);
+
                 _refreshValores();
                 // TODO: BANNER
                 //print(dataApi?.price);
@@ -161,7 +202,7 @@ class _PageFondoState extends State<PageFondo> {
                 widget.fondo.isin,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
-              trailing: lastValor != null
+              /*trailing: lastValor != null
                   ? Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
@@ -183,9 +224,111 @@ class _PageFondoState extends State<PageFondo> {
                         ],
                       ),
                     )
-                  : null,
+                  : null,*/
             ),
           ),
+          const SizedBox(height: 10),
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: Text(
+                    widget.fondo.moneda ?? '',
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
+                  title: valores.isEmpty
+                      ? const Text('Precio: Sin datos')
+                      : Center(
+                          child: Text(
+                            //'${widget.fondo.lastPrecio ?? ''}',
+                            '${valores.first.precio}',
+                            style: Theme.of(context).textTheme.headlineMedium,
+                          ),
+                        ),
+                  subtitle: valores.isEmpty
+                      ? const Text('Descarga el último valor liquidativo')
+                      : Center(
+                          child: Text(
+                            //widget.fondo.lastDate != null
+                            valores.isNotEmpty
+                                ?
+                                //_epochFormat(widget.fondo.lastDate!) : '',
+                                _epochFormat(valores.first.date)
+                                : '',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                        ),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.download, color: Colors.blue),
+                    onPressed: () async {
+                      // actualizar VL
+                      final getDataApi = await apiService.getDataApi(widget.fondo.isin);
+                      if (getDataApi != null) {
+                        //dataApi = getDataApi;
+                        //widget.fondo.insertVL(dataApi?.epochSecs as int, dataApi?.price as double);
+                        var newValor = Valor(date: getDataApi.epochSecs, precio: getDataApi.price);
+                        var newMoneda = getDataApi.market;
+                        var newLastPrecio = getDataApi.price;
+                        var newLastDate = getDataApi.epochSecs;
+
+                        setState(() {
+                          widget.fondo.moneda = newMoneda;
+                          moneda = newMoneda;
+                          widget.fondo.lastPrecio = newLastPrecio;
+                          lastPrecio = newLastPrecio;
+                          widget.fondo.lastDate = newLastDate;
+                          lastDate = newLastDate;
+                        });
+                        _sqlite.insertDataApi(
+                          widget.cartera,
+                          widget.fondo,
+                          moneda: newMoneda,
+                          lastPrecio: newLastPrecio,
+                          lastDate: newLastDate,
+                        );
+
+                        //TODO check newvalor repetido por date ??
+                        //setState(() => lastValor = newValor);
+                        _sqlite.insertVL(widget.cartera, widget.fondo, newValor);
+
+                        _refreshValores();
+                        // TODO: BANNER
+                        //print(dataApi?.price);
+                      } else {
+                        print('ERROR GET DATAAPI');
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(height: 10),
+                valores.isEmpty
+                    ? const SizedBox(height: 0)
+                    : ListTile(
+                        title: participaciones > 0
+                            ? Text('Patrimonio: ${participaciones * widget.fondo.lastPrecio!}')
+                            : const Text('Patrimonio: Sin datos'),
+                        subtitle: participaciones > 0
+                            ? Text('Participaciones: $participaciones')
+                            : const Text(
+                                'Subscribe participaciones de este Fondo para seguir la evolución de tu inversión'),
+                        // nueva ventana con Fecha / participaciones y VL
+                        trailing: IconButton(
+                          icon: const Icon(Icons.shopping_cart, color: Colors.blue),
+                          onPressed: () {},
+                        ),
+                      ),
+                const SizedBox(height: 10),
+                participaciones == 0
+                    ? const SizedBox(height: 0)
+                    : ListTile(
+                        title: Text('Rendimiento:'),
+                        isThreeLine: true,
+                        subtitle: Text('Rentabilidad: \nTAE: '),
+                      ),
+              ],
+            ),
+          ),
+
           const SizedBox(height: 10),
           // ULTIMO VALOR
           /*Card(
@@ -251,15 +394,32 @@ class _PageFondoState extends State<PageFondo> {
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: DataTable(
-                          columns: const [
-                            DataColumn(label: Text('#')),
+                          sortColumnIndex: _currentSortColumn,
+                          sortAscending: _isSortAsc,
+                          columns: [
+                            DataColumn(
+                                label: const Text('#'),
+                                onSort: (columnIndex, _) {
+                                  setState(() {
+                                    _currentSortColumn = columnIndex;
+                                    if (!_isSortAsc) {
+                                      valoresCopy.sort((a, b) => b.date.compareTo(a.date));
+                                    } else {
+                                      valoresCopy.sort((a, b) => a.date.compareTo(b.date));
+                                    }
+                                    _isSortAsc = !_isSortAsc;
+                                  });
+                                }),
                             DataColumn(label: Text('FECHA')),
                             DataColumn(label: Text('PRECIO')),
                             DataColumn(label: Text('+/-')),
                           ],
-                          rows: valores
+                          rows: valoresCopy
                               .map((valor) => DataRow(cells: [
-                                    DataCell(Text('${valores.indexOf(valor)}')),
+                                    //DataCell(Text('${valores.indexOf(valor)}')),
+                                    DataCell(_isSortAsc
+                                        ? Text('${valoresCopy.length - valoresCopy.indexOf(valor)}')
+                                        : Text('${valoresCopy.indexOf(valor)}')),
                                     DataCell(Text(_epochFormat(valor.date))),
                                     //TODO: control número de decimales: máx 5
                                     DataCell(Text('${valor.precio}')),
@@ -313,7 +473,7 @@ class _PageFondoState extends State<PageFondo> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.update),
+        child: const Icon(Icons.event_repeat),
         onPressed: () async {
           setState(() {
             loading = true;
