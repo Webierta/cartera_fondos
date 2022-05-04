@@ -9,7 +9,6 @@ import '../services/sqlite_service.dart';
 
 class PageCartera extends StatefulWidget {
   final Cartera cartera;
-
   const PageCartera({Key? key, required this.cartera}) : super(key: key);
 
   @override
@@ -259,10 +258,8 @@ class _PageCarteraState extends State<PageCartera> {
     required String msg,
     IconData icon = Icons.error_outline,
     MaterialColor color = Colors.red,
-  }) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg),
-      backgroundColor: color,
-    ));
-  }
+  }) =>
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), backgroundColor: color),
+      );
 }
