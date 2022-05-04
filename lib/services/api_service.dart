@@ -100,6 +100,7 @@ class ApiService {
       //return null;
     } on SocketException {
       //status = Status.noInternet;
+      // SocketException == sin internet
     } on Error {
       //status = Status.error;
     }*/
@@ -112,7 +113,7 @@ class ApiService {
     // https://funds.p.rapidapi.com/v1/historicalPrices/LU0690375182?to=2020-12-31&from=2015-01-25
     String urlRange = 'https://funds.p.rapidapi.com/v1/historicalPrices/';
     //LU0690375182?to=2020-12-31&from=2015-01-25
-    var url = urlRange + isin + '?to=2021-12-31&from=2021-01-01'; // '?to=' + to + '&from=' + from';
+    var url = urlRange + isin + '?to=2021-12-31&from=2021-12-01'; // '?to=' + to + '&from=' + from';
     //String version = dotenv.get('VERSION', fallback: 'Default');
     Map<String, String> headers = {
       "x-rapidapi-host": "funds.p.rapidapi.com",

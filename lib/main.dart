@@ -3,7 +3,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 
 import 'models/cartera.dart';
-//import 'pages/page_home.dart';
 import 'routes.dart';
 
 Future main() async {

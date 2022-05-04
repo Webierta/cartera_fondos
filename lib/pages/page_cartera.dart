@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../models/cartera.dart';
 import '../models/fondo.dart';
+import '../models/valor.dart';
 import '../routes.dart';
+import '../services/api_service.dart';
 import '../services/sqlite_service.dart';
 
 class PageCartera extends StatefulWidget {
@@ -15,15 +17,15 @@ class PageCartera extends StatefulWidget {
 }
 
 class _PageCarteraState extends State<PageCartera> {
-  // Fondo? _newFondo;
   late SqliteService _sqlite;
+  late ApiService apiService;
+
   var fondos = <Fondo>[];
   bool _fondoRepe = false;
+  //var valores = <Valor>[];
 
-  _refreshFondos() async {
-    final data = await _sqlite.getFondos(widget.cartera);
-    setState(() => fondos = data);
-  }
+  bool _isUpdating = false;
+  String _msgUpdating = '';
 
   @override
   void initState() {
@@ -31,29 +33,50 @@ class _PageCarteraState extends State<PageCartera> {
     _sqlite.initDB().whenComplete(() async {
       await _refreshFondos();
     });
+    apiService = ApiService();
     super.initState();
+  }
+
+  _refreshFondos() async {
+    final data = await _sqlite.getFondos(widget.cartera);
+    setState(() => fondos = data);
+    for (var fondo in fondos) {
+      await _sqlite.createTableFondo(widget.cartera, fondo);
+      await _getValoresFondo(fondo);
+    }
+  }
+
+  _getValoresFondo(Fondo fondo) async {
+    List<Valor> getValores = await _sqlite.getValoresByOrder(widget.cartera, fondo);
+    setState(() => fondo.addValores(getValores));
+  }
+
+  double? _getLastPrecio(Fondo fondo) {
+    // _sqlite.getValoresByOrder(widget.cartera, fondo);  MEJOR PARA AUTOACTUALIZARSE ??
+    if (fondo.historico.isNotEmpty) {
+      return fondo.historico.first.precio;
+    } else {
+      return null;
+    }
+  }
+
+  double? _getDiferencia(Fondo fondo) {
+    if (fondo.historico.length > 1) {
+      var last = fondo.historico.first.precio;
+      var prev = fondo.historico[1].precio;
+      return last - prev;
+    }
+    return null;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        //automaticallyImplyLeading: false,
-        //titleSpacing: 0.0,
-
-        /*title: Row(
-          children: [
-            const Icon(Icons.business_center),
-            const SizedBox(width: 10),
-            Text(widget.cartera.name),
-          ],
-        ),*/
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
             _refreshFondos();
-            //ScaffoldMessenger.of(context).clearMaterialBanners();
-            //ScaffoldMessenger.of(context).removeCurrentMaterialBanner();
             ScaffoldMessenger.of(context).removeCurrentSnackBar();
             Navigator.of(context).pushNamed(RouteGenerator.homePage);
           },
@@ -62,66 +85,80 @@ class _PageCarteraState extends State<PageCartera> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () {
-              // actualizar todos los fondos de la cartera
-            },
+            onPressed: refreshAll,
           ),
+          //TODO: ADD PopupMenuButton :Eliminar
         ],
       ),
       body: fondos.isNotEmpty
-          ? ListView.builder(
-              itemCount: fondos.length,
-              itemBuilder: (context, index) {
-                return Dismissible(
-                  key: UniqueKey(),
-                  direction: DismissDirection.endToStart,
-                  child: Card(
-                    child: ListTile(
-                      leading: const Icon(Icons.assessment, size: 32),
-                      title: Text(fondos[index].name),
-                      subtitle: Text(fondos[index].isin),
-                      onTap: () {
-                        //ScaffoldMessenger.of(context).removeCurrentMaterialBanner();
-                        ScaffoldMessenger.of(context).removeCurrentSnackBar();
-                        Navigator.of(context).pushNamed(
-                          RouteGenerator.fondoPage,
-                          arguments: ScreenArguments(widget.cartera, fondos[index]),
-                        );
-                      },
-                    ),
+          ? _isUpdating
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 10),
+                      Text(_msgUpdating),
+                    ],
                   ),
-                  background: Container(
-                    color: Colors.red,
-                    margin: const EdgeInsets.symmetric(horizontal: 15),
-                    alignment: Alignment.centerRight,
-                    child: const Padding(
-                      padding: EdgeInsets.all(10.0),
-                      child: Icon(
-                        Icons.delete,
-                        color: Colors.white,
+                )
+              : ListView.builder(
+                  itemCount: fondos.length,
+                  itemBuilder: (context, index) {
+                    return Dismissible(
+                      key: UniqueKey(),
+                      direction: DismissDirection.endToStart,
+                      child: Card(
+                        child: ListTile(
+                          leading: const Icon(Icons.assessment, size: 32),
+                          title: Text(fondos[index].name),
+                          subtitle: Text(fondos[index].isin),
+                          trailing: Column(
+                            children: [
+                              //Text('${fondos[index].lastPrecio ?? '-'}'),
+                              Text('${_getLastPrecio(fondos[index]) ?? ''}'),
+                              _getDiferencia(fondos[index]) != null
+                                  ? Text(
+                                      _getDiferencia(fondos[index])!.toStringAsFixed(2),
+                                      style: TextStyle(
+                                        color: _getDiferencia(fondos[index])! < 0
+                                            ? Colors.red
+                                            : Colors.green,
+                                      ),
+                                    )
+                                  : const Text(''),
+                            ],
+                          ),
+                          onTap: () {
+                            ScaffoldMessenger.of(context).removeCurrentSnackBar();
+                            Navigator.of(context).pushNamed(
+                              RouteGenerator.fondoPage,
+                              arguments: ScreenArguments(widget.cartera, fondos[index]),
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                  ),
-                  onDismissed: (_) {
-                    //_sqlite.deleteCartera(carteras[index].name);
-                    //_refreshCarteras();
-                    _sqlite.deleteFondo(widget.cartera, fondos[index]);
-                    _refreshFondos();
+                      background: Container(
+                        color: Colors.red,
+                        margin: const EdgeInsets.symmetric(horizontal: 15),
+                        alignment: Alignment.centerRight,
+                        child: const Padding(
+                          padding: EdgeInsets.all(10.0),
+                          child: Icon(
+                            Icons.delete,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      onDismissed: (_) {
+                        _sqlite.deleteAllValoresInFondo(widget.cartera, fondos[index]);
+                        _sqlite.deleteFondoInCartera(widget.cartera, fondos[index]);
+                        _refreshFondos();
+                      },
+                    );
                   },
-                );
-              },
-            )
-          /*? Card(
-              child: ListTile(
-                title: Text(_newFondo?.name ?? 'Nada'),
-                subtitle: Text(_newFondo?.isin ?? 'No ISIN'),
-              ),
-            )*/
-          : const Center(
-              child: Text('No hay fondos guardados.'),
-            ),
-      //Text(_newFondo.name ?? 'Nada'),
-      // body: lista de fondos (si hay)
+                )
+          : const Center(child: Text('No hay fondos guardados.')),
       floatingActionButton: Wrap(
         direction: Axis.vertical,
         children: [
@@ -129,14 +166,11 @@ class _PageCarteraState extends State<PageCartera> {
             heroTag: 'searchFondo',
             child: const Icon(Icons.search),
             onPressed: () async {
-              //ScaffoldMessenger.of(context).removeCurrentMaterialBanner();
               ScaffoldMessenger.of(context).removeCurrentSnackBar();
               final newFondo = await Navigator.of(context).pushNamed(RouteGenerator.inputFondo);
               if (newFondo != null) {
                 for (var fondo in fondos) {
                   if (fondo.isin == (newFondo as Fondo).isin) {
-                    //_show(context, (newFondo).isin);
-                    //_showBanner(msg: 'El fondo con ISIN ${fondo.isin} ya existe en esta cartera.');
                     _showMsg(msg: 'El fondo con ISIN ${fondo.isin} ya existe en esta cartera.');
                     setState(() => _fondoRepe = true);
                     break;
@@ -145,20 +179,12 @@ class _PageCarteraState extends State<PageCartera> {
                   }
                 }
                 if (_fondoRepe == false) {
-                  //setState(() => _newFondo = newFondo as Fondo);
-                  ////_sqlite.createTableCartera(widget.cartera);
-                  //_sqlite.insertFondo(widget.cartera, _newFondo as Fondo);
                   _sqlite.insertFondo(widget.cartera, newFondo as Fondo);
                   _refreshFondos();
-
-                  //_sqlite.createTableFondo(newFondo);
-
                   _showMsg(msg: 'Fondo añadido', icon: Icons.task_alt, color: Colors.blue);
-                  //_showMsg(true);
                 }
               } else {
                 _showMsg(msg: 'Error al añadir el fondo');
-                //_showMsg(false);
               }
             },
           ),
@@ -167,9 +193,8 @@ class _PageCarteraState extends State<PageCartera> {
             heroTag: 'addFondo',
             child: const Icon(Icons.addchart),
             onPressed: () {
-              //ScaffoldMessenger.of(context).removeCurrentMaterialBanner();
-              //ScaffoldMessenger.of(context).clearSnackBars();
               ScaffoldMessenger.of(context).removeCurrentSnackBar();
+              //TODO: NUEVA VENTANA AÑADIR FONDO POR ISIN
             },
           ),
         ],
@@ -177,30 +202,58 @@ class _PageCarteraState extends State<PageCartera> {
     );
   }
 
-  /*void _showBanner({
-    required String msg,
-    IconData icon = Icons.error_outline,
-    MaterialColor color = Colors.red,
-  }) {
-    ScaffoldMessenger.of(context).removeCurrentMaterialBanner();
-    ScaffoldMessenger.of(context).showMaterialBanner(MaterialBanner(
-      content: Text(msg),
-      leading: Icon(icon),
-      contentTextStyle: TextStyle(
-        fontSize: 18,
-        color: color,
-        fontStyle: FontStyle.italic,
-      ),
-      actions: [
-        TextButton(
-          child: const Text('Cerrar'),
-          onPressed: () {
-            ScaffoldMessenger.of(context).clearMaterialBanners();
-          },
-        ),
-      ],
-    ));
-  }*/
+  void refreshAll() async {
+    setState(() {
+      _isUpdating = true;
+      _msgUpdating = 'Iniciando descarga...';
+    });
+    List<Fondo> allFondosCartera = await _sqlite.getFondos(widget.cartera);
+    if (allFondosCartera.isNotEmpty) {
+      for (var fondo in allFondosCartera) {
+        _msgUpdating = 'Actualizando ${fondo.name}...';
+
+        //TODO: NECESARIO ?
+        await _sqlite.createTableFondo(widget.cartera, fondo);
+
+        final getDataApi = await apiService.getDataApi(fondo.isin);
+        if (getDataApi != null) {
+          var newValor = Valor(date: getDataApi.epochSecs, precio: getDataApi.price);
+          var newMoneda = getDataApi.market;
+          var newLastPrecio = getDataApi.price;
+          var newLastDate = getDataApi.epochSecs;
+          setState(() {
+            fondo.moneda = newMoneda;
+            fondo.lastPrecio = newLastPrecio;
+            fondo.lastDate = newLastDate;
+          });
+          _sqlite.insertDataApi(
+            widget.cartera,
+            fondo,
+            moneda: newMoneda,
+            lastPrecio: newLastPrecio,
+            lastDate: newLastDate,
+          );
+          _sqlite.insertVL(widget.cartera, fondo, newValor);
+          await _refreshFondos();
+        } else {
+          print('ERROR GET DATAAPI');
+          setState(() {
+            _isUpdating = false;
+            _msgUpdating = '';
+          });
+        }
+      }
+    } else {
+      setState(() {
+        _isUpdating = false;
+        _msgUpdating = '';
+      });
+    }
+    setState(() {
+      _isUpdating = false;
+      _msgUpdating = '';
+    });
+  }
 
   void _showMsg({
     required String msg,
@@ -212,26 +265,4 @@ class _PageCarteraState extends State<PageCartera> {
       backgroundColor: color,
     ));
   }
-/*
-  void _show(BuildContext ctx, String isin) {
-    showDialog(
-      context: ctx,
-      builder: (context) {
-        return Center(
-          child: AlertDialog(
-            title: const Text('Fondo repetido'),
-            content: SingleChildScrollView(
-              child: Text('El fondo con ISIN $isin ya existe en esta cartera.'),
-            ),
-            actions: [
-              TextButton(
-                child: const Text('Cerrar'),
-                onPressed: () => Navigator.of(ctx).pop(),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }*/
 }

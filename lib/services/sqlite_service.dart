@@ -139,36 +139,110 @@ class SqliteService {
     });
   }
 
-  Future<int> getNumberValores(Cartera cartera, Fondo fondo) async {
+  /*Future<int> getNumberValores(Cartera cartera, Fondo fondo) async {
     var valores = <Valor>[];
     final data = await getValores(cartera, fondo);
     // await database.rawQuery('SELECT COUNT(*) FROM Test')
     valores = data;
     return valores.length;
-  }
+    */ /*final db = await initDB();
+    List<Map<String, dynamic>> count = await db.rawQuery('SELECT COUNT(*) FROM ${cartera.name}');
+    int? number = Sqflite.firstIntValue(count);*/ /*
+  }*/
 
   // ELIMINAR DATOS
+
+  Future<void> deleteCarteraInCarteras(Cartera cartera) async {
+    final db = await initDB();
+    await db.delete(table, where: '$columnName = ?', whereArgs: [cartera.name]);
+  }
+
+  Future<void> deleteAllCarteraInCarteras() async {
+    final db = await initDB();
+    await db.delete(table);
+  }
+
+  Future<void> deleteFondoInCartera(Cartera cartera, Fondo fondo) async {
+    final db = await initDB();
+    await db.delete(cartera.name, where: '$columnIsin = ?', whereArgs: [fondo.isin]);
+    // await db.execute("DROP TABLE IF EXISTS $nameTable");
+  }
+
+  Future<void> deleteAllFondosInCartera(Cartera cartera) async {
+    final db = await initDB();
+    // TODO: MEJOR DROP ?
+    await db.delete(cartera.name);
+  }
+
+  Future<void> deleteValoresInFondo(Cartera cartera, Fondo fondo, int date) async {
+    final db = await initDB();
+    var nameTable = fondo.isin + '_' + cartera.name;
+    await db.delete(nameTable, where: '$columnDate = ?', whereArgs: [date]);
+  }
+
+  /*checkTableExiste(Cartera cartera, Fondo fondo) async {
+    final db = await initDB();
+    var nameTable = fondo.isin + '_' + cartera.name;
+    // SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}';
+    Future<List<Map<String, dynamic>>> existe =
+        db.query('sqlite_master', where: 'name = ?', whereArgs: [nameTable]);
+    Future<List<Map<String, dynamic>>> exist =
+        db.query('sqlite_master', where: 'type = table', whereArgs: [nameTable]);
+  }*/
+
+  Future<void> deleteAllValoresInFondo(Cartera cartera, Fondo fondo) async {
+    final db = await initDB();
+    var nameTable = fondo.isin + '_' + cartera.name;
+    await db.execute("DROP TABLE IF EXISTS $nameTable");
+    /*try {
+      await db.delete(nameTable);
+    } catch (e) {
+      print(e);
+    }*/
+  }
+
+  //////////////////////////////////////////
+
+  Future<void> deleteAll() async {
+    final db = await initDB();
+    await db.rawDelete("Delete FROM $table");
+    //await db.delete("DELETE FROM $table");
+  }
+
+  Future<void> clearall() async {
+    final db = await initDB();
+    await db.rawQuery("DELETE FROM $table");
+  }
 
   Future<void> deleteCartera(Cartera cartera) async {
     final db = await initDB();
     // TODO: delete all fondos (otra funcion deletaAll)
+    //await db.rawDelete("Delete FROM ${cartera.name}");
     await db.delete(table, where: '$columnName = ?', whereArgs: [cartera.name]);
+    //await db.execute("DROP TABLE IF EXISTS ${cartera.name}");
+    //await db.rawQuery("""DELETE FROM $table WHERE $columnName = ${cartera.name}; """);
+  }
+
+  Future<void> deleteFondoFromCartera(Cartera cartera, Fondo fondo) async {
+    final db = await initDB();
+    //await db.rawDelete("Delete FROM ${cartera.name}");
+    //TODO : TRY ??
+    await db.delete(cartera.name, where: '$columnIsin = ?', whereArgs: [fondo.isin]);
+    //await db.rawDelete("DELETE FROM ${cartera.name}");
   }
 
   Future<void> deleteFondo(Cartera cartera, Fondo fondo) async {
     final db = await initDB();
-    await db.delete(cartera.name, where: '$columnIsin = ?', whereArgs: [fondo.isin]);
-  }
-
-  Future<void> clearCartera() async {
-    final db = await initDB();
-    await db.rawQuery("DELETE FROM $table");
+    var nameTable = fondo.isin + '_' + cartera.name;
+    //await db.rawDelete("Delete FROM $nameTable");
+    //await db.delete(nameTable, where: '$columnIsin = ?', whereArgs: [fondo.isin]);
+    await db.execute("DROP TABLE IF EXISTS $nameTable");
   }
 
   Future<void> clearFondo(Cartera cartera, Fondo fondo) async {
     final db = await initDB();
     var nameTable = fondo.isin + '_' + cartera.name;
-    await db.rawQuery("DELETE FROM $nameTable");
+    await db.rawDelete("DELETE FROM $nameTable");
   }
 
   // CONSULTAR Y REORDENAR DATOS

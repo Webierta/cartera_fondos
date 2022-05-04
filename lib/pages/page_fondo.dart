@@ -178,6 +178,16 @@ class _PageFondoState extends State<PageFondo> {
                     value: 0,
                     child: Row(
                       children: const [
+                        Icon(Icons.delete_forever),
+                        SizedBox(width: 10),
+                        Text('Eliminar datos'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 0,
+                    child: Row(
+                      children: const [
                         Icon(Icons.download_rounded),
                         SizedBox(width: 10),
                         Text('Exportar'),
@@ -419,11 +429,43 @@ class _PageFondoState extends State<PageFondo> {
                                     //DataCell(Text('${valores.indexOf(valor)}')),
                                     DataCell(_isSortAsc
                                         ? Text('${valoresCopy.length - valoresCopy.indexOf(valor)}')
-                                        : Text('${valoresCopy.indexOf(valor)}')),
+                                        : Text('${valoresCopy.indexOf(valor) + 1}')),
                                     DataCell(Text(_epochFormat(valor.date))),
                                     //TODO: control número de decimales: máx 5
                                     DataCell(Text('${valor.precio}')),
-                                    DataCell(Text('-2.3')),
+                                    _isSortAsc
+                                        ? DataCell(valoresCopy.length >
+                                                (valoresCopy.indexOf(valor) + 1)
+                                            ? Text(
+                                                (valor.precio -
+                                                        valoresCopy[valoresCopy.indexOf(valor) + 1]
+                                                            .precio)
+                                                    .toStringAsFixed(2),
+                                                style: valor.precio -
+                                                            valoresCopy[
+                                                                    valoresCopy.indexOf(valor) + 1]
+                                                                .precio <
+                                                        0
+                                                    ? const TextStyle(color: Colors.red)
+                                                    : const TextStyle(color: Colors.green),
+                                              )
+                                            : const Text(''))
+                                        : DataCell(valoresCopy.length >
+                                                    (valoresCopy.indexOf(valor) - 1) &&
+                                                valoresCopy.indexOf(valor) > 0
+                                            ? Text(
+                                                (valoresCopy[valoresCopy.indexOf(valor) - 1]
+                                                            .precio -
+                                                        valor.precio)
+                                                    .toStringAsFixed(2),
+                                                style: valoresCopy[valoresCopy.indexOf(valor) - 1]
+                                                                .precio -
+                                                            valor.precio <
+                                                        0
+                                                    ? const TextStyle(color: Colors.red)
+                                                    : const TextStyle(color: Colors.green),
+                                              )
+                                            : const Text('')),
                                   ]))
                               .toList(),
                         ),

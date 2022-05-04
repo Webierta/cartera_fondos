@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'valor.dart';
+
 class Fondo {
   final String isin;
   final String name;
@@ -31,8 +33,10 @@ class Fondo {
   int participaciones = 0;
   // enum ??
 
-  var valor = <int, double>{};
-  final _historico = <Map<int, double>>[];
+  //var valor = <int, double>{};
+  late Valor valor;
+  //final _historico = <Map<int, double>>[];
+  final _historico = <Valor>[];
   double _patrimonio = 0;
   // rentabilidad
   // otros índices
@@ -43,27 +47,56 @@ class Fondo {
     _patrimonio = participaciones * valorLiquidativo;
   }
 
-  List<Map<int, double>> get historico {
+  /*List<Map<int, double>> get historico {
+    return [..._historico];
+  }*/
+  List<Valor> get historico {
     return [..._historico];
   }
 
-  addHistorico(int date, double vl) {
+  /*addHistorico(int date, double vl) {
     _historico.add({date: vl});
+  }*/
+  addValor(Valor valor) {
+    _historico.add(valor);
   }
 
-  int getLastDate() {
+  addValores(List<Valor> valores) {
+    for (valor in valores) {
+      _historico.add(valor);
+    }
+  }
+
+  /*int getLastDate() {
     Map<int, double> lastEntry = _historico.last;
     List<int> listDate = lastEntry.keys.toList();
     return listDate.first;
+  }*/
+  int getLastDate() {
+    Valor lastEntry = _historico.last;
+    //List<int> listDate = lastEntry.keys.toList();
+    //return listDate.first;
+    return lastEntry.date;
   }
 
-  getLastValor() {
+  /*getLastValor() {
     Map<int, double> lastEntry = _historico.last;
     List<double> listVL = lastEntry.values.toList();
     return listVL.first;
+  }*/
+  double getLastValor() {
+    // getLastPrecio
+    Valor lastEntry = _historico.last;
+    //List<double> listVL = lastEntry.values.toList();
+    //return listVL.first;
+    return lastEntry.precio;
   }
 
-  Map<int, double> getValorByDate(int date) {
+  /*Map<int, double> getValorByDate(int date) {
+    return _historico[date];
+  }*/
+  Valor getValorByDate(int date) {
+    //return _historico[date];
     return _historico[date];
   }
 
