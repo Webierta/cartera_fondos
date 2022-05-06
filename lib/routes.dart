@@ -7,13 +7,15 @@ import 'pages/page_cartera.dart';
 import 'pages/page_fondo.dart';
 import 'pages/page_home.dart';
 import 'pages/page_info.dart';
+import 'pages/page_input_fondo.dart';
 import 'pages/page_search_fondo.dart';
 
 class RouteGenerator {
   static const String homePage = '/';
   static const String carteraPage = '/cartera';
   static const String fondoPage = '/fondo';
-  static const String inputFondo = '/searchFondo';
+  static const String searchFondo = '/searchFondo';
+  static const String inputFondo = '/inputFondo';
   static const String infoPage = '/info';
   static const String aboutPage = '/about';
 
@@ -39,8 +41,10 @@ class RouteGenerator {
                   cartera: args as Cartera,
                   fondo: args as Fondo,
                 ));*/
-      case inputFondo:
+      case searchFondo:
         return MaterialPageRoute(builder: (context) => const PageSearchFondo());
+      case inputFondo:
+        return MaterialPageRoute(builder: (context) => PageInputFondo(cartera: args as Cartera));
       case infoPage:
         return MaterialPageRoute(builder: (context) => const PageInfo());
       case aboutPage:

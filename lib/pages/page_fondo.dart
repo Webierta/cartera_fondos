@@ -6,6 +6,7 @@ import '../models/cartera.dart';
 import '../models/data_api.dart';
 import '../models/fondo.dart';
 import '../models/valor.dart';
+import '../routes.dart';
 import '../services/api_service.dart';
 import '../services/sqlite_service.dart';
 
@@ -26,13 +27,6 @@ class _PageFondoState extends State<PageFondo> {
 
   var valores = <Valor>[];
   var valoresCopy = <Valor>[];
-  // TODO lastValor ????? mejor lastPrecio + lastDate
-  //Valor? lastValor;
-
-  String? moneda;
-  double? lastPrecio;
-  int? lastDate;
-  int participaciones = 0;
 
   bool loading = true;
   String msgLoading = '';
@@ -53,6 +47,11 @@ class _PageFondoState extends State<PageFondo> {
   }
 
   _refreshValores() async {
+    setState(() {
+      valores = <Valor>[];
+      valoresCopy = <Valor>[];
+    });
+
     await _sqlite.createTableFondo(widget.cartera, widget.fondo);
     setState(() => msgLoading = 'Obteniendo datos...');
     final data = await _sqlite
@@ -109,7 +108,7 @@ class _PageFondoState extends State<PageFondo> {
     } else if (value == ItemMenuFondo.reembolsar.index) {
       print('REEMBOLSAR');
     } else if (value == ItemMenuFondo.eliminar.index) {
-      print('ELIMINAR');
+      _deleteConfirm(context);
     } else if (value == ItemMenuFondo.exportar.index) {
       print('EXPORTAR');
     } else {}
@@ -119,6 +118,17 @@ class _PageFondoState extends State<PageFondo> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () async {
+            await _refreshValores();
+            ScaffoldMessenger.of(context).removeCurrentSnackBar();
+            Navigator.of(context).pushNamed(
+              RouteGenerator.carteraPage,
+              arguments: widget.cartera,
+            );
+          },
+        ),
         title: const Text('DETALLE FONDO'),
         actions: [
           IconButton(
@@ -200,11 +210,12 @@ class _PageFondoState extends State<PageFondo> {
                 valores.isEmpty
                     ? const SizedBox(height: 0)
                     : ListTile(
-                        title: participaciones > 0
-                            ? Text('Patrimonio: ${participaciones * widget.fondo.lastPrecio!}')
+                        title: widget.fondo.participaciones > 0
+                            ? Text(
+                                'Patrimonio: ${widget.fondo.participaciones * widget.fondo.lastPrecio!}')
                             : const Text('Patrimonio: Sin datos'),
-                        subtitle: participaciones > 0
-                            ? Text('Participaciones: $participaciones')
+                        subtitle: widget.fondo.participaciones > 0
+                            ? Text('Participaciones: ${widget.fondo.participaciones}')
                             : const Text(
                                 'Subscribe participaciones de este Fondo para seguir la evolución de tu inversión'),
                         // TODO: nueva ventana con Fecha / participaciones y VL
@@ -214,9 +225,10 @@ class _PageFondoState extends State<PageFondo> {
                         ),
                       ),
                 const SizedBox(height: 10),
-                participaciones == 0
+                widget.fondo.participaciones == 0
                     ? const SizedBox(height: 0)
-                    : ListTile(
+                    // TODO: GET DATOS REALES
+                    : const ListTile(
                         title: Text('Rendimiento:'),
                         isThreeLine: true,
                         subtitle: Text('Rentabilidad: \nTAE: '),
@@ -381,11 +393,11 @@ class _PageFondoState extends State<PageFondo> {
       var newLastDate = getDataApi.epochSecs;
       setState(() {
         widget.fondo.moneda = newMoneda;
-        moneda = newMoneda;
+        //moneda = newMoneda;
         widget.fondo.lastPrecio = newLastPrecio;
-        lastPrecio = newLastPrecio;
+        //lastPrecio = newLastPrecio;
         widget.fondo.lastDate = newLastDate;
-        lastDate = newLastDate;
+        //lastDate = newLastDate;
       });
       _sqlite.insertDataApi(
         widget.cartera,
@@ -410,6 +422,49 @@ class _PageFondoState extends State<PageFondo> {
     final DateTime date = DateTime.fromMillisecondsSinceEpoch(epoch * 1000);
     final DateFormat formatter = DateFormat('dd/MM/yy');
     return formatter.format(date);
+  }
+
+  void _deleteConfirm(BuildContext context) {
+    if (valores.isEmpty) {
+      _showMsg(msg: 'Nada que eliminar');
+    } else {
+      showDialog(
+          context: context,
+          builder: (BuildContext ctx) {
+            return AlertDialog(
+              title: const Text('Eliminar todo'),
+              content: const Text('Esto eliminará todos los valores almacenados del fondo.'),
+              actions: [
+                TextButton(
+                  child: const Text('CANCELAR'),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                TextButton(
+                  child: const Text('ACEPTAR'),
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    primary: Colors.white,
+                    //textStyle: const TextStyle(color: Colors.white),
+                  ),
+                  onPressed: () async {
+                    await _sqlite.deleteAllValoresInFondo(widget.cartera, widget.fondo);
+                    await _refreshValores();
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            );
+          });
+    }
+  }
+
+  void _showMsg({
+    required String msg,
+    MaterialColor color = Colors.grey,
+  }) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: color),
+    );
   }
 }
 

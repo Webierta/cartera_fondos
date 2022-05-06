@@ -29,7 +29,6 @@ class Fondo {
   String? moneda;
   double? lastPrecio;
   int? lastDate;
-
   int participaciones = 0;
   // enum ??
 
@@ -84,7 +83,7 @@ class Fondo {
     List<double> listVL = lastEntry.values.toList();
     return listVL.first;
   }*/
-  double getLastValor() {
+  double getLastPrecio() {
     // getLastPrecio
     Valor lastEntry = _historico.last;
     //List<double> listVL = lastEntry.values.toList();

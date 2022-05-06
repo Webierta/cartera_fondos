@@ -232,7 +232,6 @@ class _PageHomeState extends State<PageHome> {
                       //textStyle: const TextStyle(color: Colors.white),
                     ),
                     onPressed: () async {
-                      //TODO: await en sqlite ??
                       if (_controller.value.text.trim().isNotEmpty) {
                         var _input = _controller.value.text;
                         /* INNECESARIO PORQUE NO SE ADMITEN ESTOS CARACTERES
@@ -295,6 +294,5 @@ class _PageHomeState extends State<PageHome> {
     }
     await _sqlite.deleteAllFondosInCartera(cartera);
     await _sqlite.deleteCarteraInCarteras(cartera);
-    //await _refreshCarteras();
   }
 }

@@ -7,6 +7,8 @@ import '../routes.dart';
 import '../services/api_service.dart';
 import '../services/sqlite_service.dart';
 
+enum ItemMenuCartera { eliminar }
+
 class PageCartera extends StatefulWidget {
   final Cartera cartera;
   const PageCartera({Key? key, required this.cartera}) : super(key: key);
@@ -21,7 +23,6 @@ class _PageCarteraState extends State<PageCartera> {
 
   var fondos = <Fondo>[];
   bool _fondoRepe = false;
-  //var valores = <Valor>[];
 
   bool _isUpdating = false;
   String _msgUpdating = '';
@@ -68,6 +69,29 @@ class _PageCarteraState extends State<PageCartera> {
     return null;
   }
 
+  PopupMenuItem _buildMenuItem(String title, IconData iconData, int position) {
+    return PopupMenuItem(
+      value: position,
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(iconData, color: Colors.white),
+              const SizedBox(width: 10),
+              Text(title),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  _onMenuItemSelected(int value) {
+    if (value == ItemMenuCartera.eliminar.index) {
+      _deleteAllConfirm(context);
+    } else {}
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -86,7 +110,21 @@ class _PageCarteraState extends State<PageCartera> {
             icon: const Icon(Icons.refresh),
             onPressed: refreshAll,
           ),
-          //TODO: ADD PopupMenuButton :Eliminar
+          PopupMenuButton(
+            onSelected: (value) => _onMenuItemSelected(value as int),
+            color: Colors.blue,
+            offset: Offset(0.0, AppBar().preferredSize.height),
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8.0)),
+            ),
+            itemBuilder: (ctx) => [
+              _buildMenuItem(
+                'Eliminar Todos',
+                Icons.delete_forever,
+                ItemMenuCartera.eliminar.index,
+              ),
+            ],
+          ),
         ],
       ),
       body: fondos.isNotEmpty
@@ -170,7 +208,10 @@ class _PageCarteraState extends State<PageCartera> {
               if (newFondo != null) {
                 for (var fondo in fondos) {
                   if (fondo.isin == (newFondo as Fondo).isin) {
-                    _showMsg(msg: 'El fondo con ISIN ${fondo.isin} ya existe en esta cartera.');
+                    _showMsg(
+                      msg: 'El fondo con ISIN ${fondo.isin} ya existe en esta cartera.',
+                      color: Colors.red,
+                    );
                     setState(() => _fondoRepe = true);
                     break;
                   } else {
@@ -180,10 +221,10 @@ class _PageCarteraState extends State<PageCartera> {
                 if (_fondoRepe == false) {
                   _sqlite.insertFondo(widget.cartera, newFondo as Fondo);
                   _refreshFondos();
-                  _showMsg(msg: 'Fondo añadido', icon: Icons.task_alt, color: Colors.blue);
+                  _showMsg(msg: 'Fondo añadido');
                 }
               } else {
-                _showMsg(msg: 'Error al añadir el fondo');
+                _showMsg(msg: 'Error al añadir el fondo', color: Colors.red);
               }
             },
           ),
@@ -193,7 +234,10 @@ class _PageCarteraState extends State<PageCartera> {
             child: const Icon(Icons.addchart),
             onPressed: () {
               ScaffoldMessenger.of(context).removeCurrentSnackBar();
-              //TODO: NUEVA VENTANA AÑADIR FONDO POR ISIN
+              Navigator.of(context).pushNamed(
+                RouteGenerator.inputFondo,
+                arguments: widget.cartera,
+              );
             },
           ),
         ],
@@ -235,7 +279,7 @@ class _PageCarteraState extends State<PageCartera> {
           _sqlite.insertVL(widget.cartera, fondo, newValor);
           await _refreshFondos();
         } else {
-          print('ERROR GET DATAAPI');
+          _showMsg(msg: 'Error al actualizar el fondo ${fondo.name}');
           setState(() {
             _isUpdating = false;
             _msgUpdating = '';
@@ -243,6 +287,7 @@ class _PageCarteraState extends State<PageCartera> {
         }
       }
     } else {
+      _showMsg(msg: 'Nada que eliminar');
       setState(() {
         _isUpdating = false;
         _msgUpdating = '';
@@ -254,10 +299,47 @@ class _PageCarteraState extends State<PageCartera> {
     });
   }
 
+  void _deleteAllConfirm(BuildContext context) {
+    if (fondos.isEmpty) {
+      _showMsg(msg: 'Nada que eliminar');
+    } else {
+      showDialog(
+          context: context,
+          builder: (BuildContext ctx) {
+            return AlertDialog(
+              title: const Text('Eliminar todo'),
+              content: Text(
+                  'Esto eliminará todos los fondos almacenados en la cartera ${widget.cartera.name}'),
+              actions: [
+                TextButton(
+                  child: const Text('CANCELAR'),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                TextButton(
+                  child: const Text('ACEPTAR'),
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    primary: Colors.white,
+                    //textStyle: const TextStyle(color: Colors.white),
+                  ),
+                  onPressed: () async {
+                    for (var fondo in fondos) {
+                      await _sqlite.deleteAllValoresInFondo(widget.cartera, fondo);
+                      await _sqlite.deleteFondoInCartera(widget.cartera, fondo);
+                    }
+                    await _refreshFondos();
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            );
+          });
+    }
+  }
+
   void _showMsg({
     required String msg,
-    IconData icon = Icons.error_outline,
-    MaterialColor color = Colors.red,
+    MaterialColor color = Colors.grey,
   }) =>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(msg), backgroundColor: color),
