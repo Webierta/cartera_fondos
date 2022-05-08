@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
 import '../models/cartera.dart';
 import '../models/fondo.dart';
@@ -196,7 +197,46 @@ class _PageCarteraState extends State<PageCartera> {
                   },
                 )
           : const Center(child: Text('No hay fondos guardados.')),
-      floatingActionButton: Wrap(
+      floatingActionButton: SpeedDial(
+        icon: Icons.addchart,
+        spacing: 8,
+        spaceBetweenChildren: 4,
+        children: [
+          SpeedDialChild(
+            child: const Icon(Icons.list), //dns // list  //
+            label: 'Base de Datos local',
+            backgroundColor: Colors.blue,
+            foregroundColor: Colors.white,
+            onTap: () async {
+              ScaffoldMessenger.of(context).removeCurrentSnackBar();
+              final newFondo = await Navigator.of(context).pushNamed(RouteGenerator.searchFondo);
+              if (newFondo != null) {
+                addFondo(newFondo as Fondo);
+              } else {
+                _showMsg(msg: 'Sin cambios en la cartera.');
+              }
+            },
+          ),
+          SpeedDialChild(
+            child: const Icon(Icons.search, color: Colors.white),
+            label: 'Buscar online por ISIN',
+            backgroundColor: Colors.blue,
+            onTap: () async {
+              ScaffoldMessenger.of(context).removeCurrentSnackBar();
+              final newFondo = await Navigator.of(context).pushNamed(
+                RouteGenerator.inputFondo,
+                arguments: widget.cartera,
+              );
+              if (newFondo != null) {
+                addFondo(newFondo as Fondo);
+              } else {
+                _showMsg(msg: 'Sin cambios en la cartera.');
+              }
+            },
+          ),
+        ],
+      ),
+      /*floatingActionButton: Wrap(
         direction: Axis.vertical,
         children: [
           FloatingActionButton(
@@ -204,27 +244,11 @@ class _PageCarteraState extends State<PageCartera> {
             child: const Icon(Icons.search),
             onPressed: () async {
               ScaffoldMessenger.of(context).removeCurrentSnackBar();
-              final newFondo = await Navigator.of(context).pushNamed(RouteGenerator.inputFondo);
+              final newFondo = await Navigator.of(context).pushNamed(RouteGenerator.searchFondo);
               if (newFondo != null) {
-                for (var fondo in fondos) {
-                  if (fondo.isin == (newFondo as Fondo).isin) {
-                    _showMsg(
-                      msg: 'El fondo con ISIN ${fondo.isin} ya existe en esta cartera.',
-                      color: Colors.red,
-                    );
-                    setState(() => _fondoRepe = true);
-                    break;
-                  } else {
-                    setState(() => _fondoRepe = false);
-                  }
-                }
-                if (_fondoRepe == false) {
-                  _sqlite.insertFondo(widget.cartera, newFondo as Fondo);
-                  _refreshFondos();
-                  _showMsg(msg: 'Fondo añadido');
-                }
+                addFondo(newFondo as Fondo);
               } else {
-                _showMsg(msg: 'Error al añadir el fondo', color: Colors.red);
+                _showMsg(msg: 'Sin cambios en la cartera.');
               }
             },
           ),
@@ -232,17 +256,42 @@ class _PageCarteraState extends State<PageCartera> {
           FloatingActionButton(
             heroTag: 'addFondo',
             child: const Icon(Icons.addchart),
-            onPressed: () {
+            onPressed: () async {
               ScaffoldMessenger.of(context).removeCurrentSnackBar();
-              Navigator.of(context).pushNamed(
+              final newFondo = await Navigator.of(context).pushNamed(
                 RouteGenerator.inputFondo,
                 arguments: widget.cartera,
               );
+              if (newFondo != null) {
+                addFondo(newFondo as Fondo);
+              } else {
+                _showMsg(msg: 'Sin cambios en la cartera.');
+              }
             },
           ),
         ],
-      ),
+      ),*/
     );
+  }
+
+  addFondo(Fondo newFondo) {
+    for (var fondo in fondos) {
+      if (fondo.isin == newFondo.isin) {
+        _showMsg(
+          msg: 'El fondo con ISIN ${fondo.isin} ya existe en esta cartera.',
+          color: Colors.red,
+        );
+        setState(() => _fondoRepe = true);
+        break;
+      } else {
+        setState(() => _fondoRepe = false);
+      }
+    }
+    if (_fondoRepe == false) {
+      _sqlite.insertFondo(widget.cartera, newFondo);
+      _refreshFondos();
+      _showMsg(msg: 'Fondo añadido');
+    }
   }
 
   void refreshAll() async {

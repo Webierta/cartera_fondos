@@ -8,6 +8,7 @@ import 'pages/page_fondo.dart';
 import 'pages/page_home.dart';
 import 'pages/page_info.dart';
 import 'pages/page_input_fondo.dart';
+import 'pages/page_input_range.dart';
 import 'pages/page_search_fondo.dart';
 
 class RouteGenerator {
@@ -16,6 +17,7 @@ class RouteGenerator {
   static const String fondoPage = '/fondo';
   static const String searchFondo = '/searchFondo';
   static const String inputFondo = '/inputFondo';
+  static const String inputRange = '/inputRange';
   static const String infoPage = '/info';
   static const String aboutPage = '/about';
 
@@ -45,6 +47,8 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (context) => const PageSearchFondo());
       case inputFondo:
         return MaterialPageRoute(builder: (context) => PageInputFondo(cartera: args as Cartera));
+      case inputRange:
+        return MaterialPageRoute(builder: (context) => PageInputRange(fondo: args as Fondo));
       case infoPage:
         return MaterialPageRoute(builder: (context) => const PageInfo());
       case aboutPage:

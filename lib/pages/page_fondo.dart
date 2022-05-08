@@ -1,9 +1,9 @@
-import 'package:cartera_fondos/models/data_api_range.dart';
+//import 'package:cartera_fondos/models/data_api_range.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../models/cartera.dart';
-import '../models/data_api.dart';
+//import '../models/data_api.dart';
 import '../models/fondo.dart';
 import '../models/valor.dart';
 import '../routes.dart';
@@ -133,7 +133,7 @@ class _PageFondoState extends State<PageFondo> {
         actions: [
           IconButton(
             icon: const Icon(Icons.event_repeat),
-            onPressed: getRangeValores,
+            onPressed: () => getRangeValores(context),
           ),
           PopupMenuButton(
             onSelected: (value) => _onMenuItemSelected(value as int),
@@ -249,86 +249,92 @@ class _PageFondoState extends State<PageFondo> {
                     ],
                   ),
                 )
-              : Card(
-                  child: ListView(
-                    shrinkWrap: true,
-                    physics: const ClampingScrollPhysics(),
-                    children: [
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: DataTable(
-                          sortColumnIndex: _currentSortColumn,
-                          sortAscending: _isSortAsc,
-                          columnSpacing: 30,
-                          //horizontalMargin: 0,
-                          columns: [
-                            DataColumn(
-                                label: const Text('#'),
-                                numeric: true,
-                                onSort: (columnIndex, _) {
-                                  setState(() {
-                                    _currentSortColumn = columnIndex;
-                                    if (!_isSortAsc) {
-                                      valoresCopy.sort((a, b) => b.date.compareTo(a.date));
-                                    } else {
-                                      valoresCopy.sort((a, b) => a.date.compareTo(b.date));
-                                    }
-                                    _isSortAsc = !_isSortAsc;
-                                  });
-                                }),
-                            const DataColumn(label: Text('FECHA'), numeric: true),
-                            const DataColumn(label: Text('PRECIO'), numeric: true),
-                            const DataColumn(label: Text('+/-'), numeric: true),
-                          ],
-                          rows: valoresCopy
-                              .map((valor) => DataRow(cells: [
-                                    //DataCell(Text('${valores.indexOf(valor)}')),
-                                    DataCell(_isSortAsc
-                                        ? Text('${valoresCopy.length - valoresCopy.indexOf(valor)}')
-                                        : Text('${valoresCopy.indexOf(valor) + 1}')),
-                                    DataCell(Text(_epochFormat(valor.date))),
-                                    //TODO: control número de decimales: máx 5
-                                    DataCell(Text('${valor.precio}')),
-                                    _isSortAsc
-                                        ? DataCell(valoresCopy.length >
-                                                (valoresCopy.indexOf(valor) + 1)
+              : valores.isEmpty
+                  ? const Text('')
+                  : Card(
+                      child: ListView(
+                        shrinkWrap: true,
+                        physics: const ClampingScrollPhysics(),
+                        children: [
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: DataTable(
+                              sortColumnIndex: _currentSortColumn,
+                              sortAscending: _isSortAsc,
+                              columnSpacing: 30,
+                              //horizontalMargin: 0,
+                              columns: [
+                                DataColumn(
+                                    label: const Text('#'),
+                                    numeric: true,
+                                    onSort: (columnIndex, _) {
+                                      setState(() {
+                                        _currentSortColumn = columnIndex;
+                                        if (!_isSortAsc) {
+                                          valoresCopy.sort((a, b) => b.date.compareTo(a.date));
+                                        } else {
+                                          valoresCopy.sort((a, b) => a.date.compareTo(b.date));
+                                        }
+                                        _isSortAsc = !_isSortAsc;
+                                      });
+                                    }),
+                                const DataColumn(label: Text('FECHA'), numeric: true),
+                                const DataColumn(label: Text('PRECIO'), numeric: true),
+                                const DataColumn(label: Text('+/-'), numeric: true),
+                              ],
+                              rows: valoresCopy
+                                  .map((valor) => DataRow(cells: [
+                                        //DataCell(Text('${valores.indexOf(valor)}')),
+                                        DataCell(_isSortAsc
                                             ? Text(
-                                                (valor.precio -
-                                                        valoresCopy[valoresCopy.indexOf(valor) + 1]
-                                                            .precio)
-                                                    .toStringAsFixed(2),
-                                                style: valor.precio -
+                                                '${valoresCopy.length - valoresCopy.indexOf(valor)}')
+                                            : Text('${valoresCopy.indexOf(valor) + 1}')),
+                                        DataCell(Text(_epochFormat(valor.date))),
+                                        //TODO: control número de decimales: máx 5
+                                        DataCell(Text('${valor.precio}')),
+                                        _isSortAsc
+                                            ? DataCell(valoresCopy.length >
+                                                    (valoresCopy.indexOf(valor) + 1)
+                                                ? Text(
+                                                    (valor.precio -
                                                             valoresCopy[
                                                                     valoresCopy.indexOf(valor) + 1]
-                                                                .precio <
-                                                        0
-                                                    ? const TextStyle(color: Colors.red)
-                                                    : const TextStyle(color: Colors.green),
-                                              )
-                                            : const Text(''))
-                                        : DataCell(valoresCopy.length >
-                                                    (valoresCopy.indexOf(valor) - 1) &&
-                                                valoresCopy.indexOf(valor) > 0
-                                            ? Text(
-                                                (valoresCopy[valoresCopy.indexOf(valor) - 1]
-                                                            .precio -
-                                                        valor.precio)
-                                                    .toStringAsFixed(2),
-                                                style: valoresCopy[valoresCopy.indexOf(valor) - 1]
+                                                                .precio)
+                                                        .toStringAsFixed(2),
+                                                    style: valor.precio -
+                                                                valoresCopy[
+                                                                        valoresCopy.indexOf(valor) +
+                                                                            1]
+                                                                    .precio <
+                                                            0
+                                                        ? const TextStyle(color: Colors.red)
+                                                        : const TextStyle(color: Colors.green),
+                                                  )
+                                                : const Text(''))
+                                            : DataCell(valoresCopy.length >
+                                                        (valoresCopy.indexOf(valor) - 1) &&
+                                                    valoresCopy.indexOf(valor) > 0
+                                                ? Text(
+                                                    (valoresCopy[valoresCopy.indexOf(valor) - 1]
                                                                 .precio -
-                                                            valor.precio <
-                                                        0
-                                                    ? const TextStyle(color: Colors.red)
-                                                    : const TextStyle(color: Colors.green),
-                                              )
-                                            : const Text('')),
-                                  ]))
-                              .toList(),
-                        ),
-                      )
-                    ],
-                  ),
-                ),
+                                                            valor.precio)
+                                                        .toStringAsFixed(2),
+                                                    style:
+                                                        valoresCopy[valoresCopy.indexOf(valor) - 1]
+                                                                        .precio -
+                                                                    valor.precio <
+                                                                0
+                                                            ? const TextStyle(color: Colors.red)
+                                                            : const TextStyle(color: Colors.green),
+                                                  )
+                                                : const Text('')),
+                                      ]))
+                                  .toList(),
+                            ),
+                          )
+                        ],
+                      ),
+                    ),
         ],
       ),
       /*floatingActionButton: FloatingActionButton(
@@ -338,52 +344,45 @@ class _PageFondoState extends State<PageFondo> {
     );
   }
 
-  void getRangeValores() async {
-    setState(() {
-      loading = true;
-      msgLoading = 'Conectando...';
-    });
-    //ScaffoldMessenger.of(context).removeCurrentMaterialBanner();
-    /*final getDataApi = await apiService.getDataApi(widget.fondo.isin);
-        if (getDataApi != null) {
-        //dataApi = getDataApi;
-        //widget.fondo.insertVL(dataApi?.epochSecs as int, dataApi?.price as double);
-        var newValor = Valor(date: getDataApi.epochSecs, precio: getDataApi.price);
-        //TODO check newvalor repetido por date ??
-        setState(() => lastValor = newValor);
-        _sqlite.insertVL(widget.fondo, newValor);
-        _refreshValores(widget.fondo);*/
-    final getDateApiRange = await apiService
-        .getDataApiRange(widget.fondo.isin, 'to', 'from')
-        ?.whenComplete(() => setState(() => msgLoading = 'Descargando datos...'));
-    print(getDateApiRange?.length);
-    var newListValores = <Valor>[];
-    if (getDateApiRange != null) {
-      /*for (var dataApi in getDateApiRange) {
-            var newValor = Valor(date: dataApi.epochSecs, precio: dataApi.price);
-            _sqlite.insertVL(widget.fondo, newValor);
-            _refreshValores(widget.fondo);
-          }*/
-      for (var dataApi in getDateApiRange) {
-        newListValores.add(Valor(date: dataApi.epochSecs, precio: dataApi.price));
-      }
-      await _sqlite
-          .insertListVL(widget.cartera, widget.fondo, newListValores)
-          .whenComplete(() => setState(() => msgLoading = 'Escribiendo datos...'));
-      print('HECHO');
-      await _refreshValores();
+  void getRangeValores(BuildContext context) async {
+    final newRange = await Navigator.of(context).pushNamed(
+      RouteGenerator.inputRange,
+      arguments: widget.fondo,
+    );
+    if (newRange != null) {
+      var range = newRange as DateTimeRange;
+      String from = DateFormat('yyyy-MM-dd').format(range.start);
+      String to = DateFormat('yyyy-MM-dd').format(range.end);
+
       setState(() {
-        loading = false;
-        msgLoading = '';
+        loading = true;
+        msgLoading = 'Conectando...';
       });
-    } else {
-      setState(() => loading = false);
-      print('ERROR GET DATA API RANGE');
+      final getDateApiRange = await apiService
+          .getDataApiRange(widget.fondo.isin, to, from)
+          ?.whenComplete(() => setState(() => msgLoading = 'Descargando datos...'));
+      //print(getDateApiRange?.length);
+      var newListValores = <Valor>[];
+      if (getDateApiRange != null) {
+        for (var dataApi in getDateApiRange) {
+          newListValores.add(Valor(date: dataApi.epochSecs, precio: dataApi.price));
+        }
+        await _sqlite
+            .insertListVL(widget.cartera, widget.fondo, newListValores)
+            .whenComplete(() => setState(() => msgLoading = 'Escribiendo datos...'));
+        await _refreshValores();
+        setState(() {
+          loading = false;
+          msgLoading = '';
+        });
+      } else {
+        setState(() => loading = false);
+        print('ERROR GET DATA API RANGE');
+      }
     }
   }
 
   void updateValor() async {
-    // actualizar VL
     //TODO: msg updating
     final getDataApi = await apiService.getDataApi(widget.fondo.isin);
     if (getDataApi != null) {

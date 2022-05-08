@@ -14,11 +14,18 @@ class PageSearchFondo extends StatefulWidget {
 
 class _PageSearchFondoState extends State<PageSearchFondo> {
   //late TextEditingController _controller;
-
   final List<Map<String, dynamic>> _allFondos = [];
   //List _items = [];
   List<Map<String, dynamic>> _filterFondos = [];
   bool _isLoading = true;
+
+  @override
+  void initState() {
+    //_controller = TextEditingController();
+    readJson();
+    _filterFondos = _allFondos;
+    super.initState();
+  }
 
   Future<void> readJson() async {
     final String response = await rootBundle.loadString('assets/fondos_all.json');
@@ -29,14 +36,6 @@ class _PageSearchFondoState extends State<PageSearchFondo> {
       }
       _isLoading = false;
     });
-  }
-
-  @override
-  void initState() {
-    //_controller = TextEditingController();
-    readJson();
-    _filterFondos = _allFondos;
-    super.initState();
   }
 
   /*@override
@@ -56,16 +55,14 @@ class _PageSearchFondoState extends State<PageSearchFondo> {
               fondo['isin']?.toUpperCase().contains(enteredKeyword.toUpperCase()))
           .toList();
     }
-    setState(() {
-      _filterFondos = results;
-    });
+    setState(() => _filterFondos = results);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('BUSCAR FONDO'),
+        title: const Text('Buscar Fondo'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(10),

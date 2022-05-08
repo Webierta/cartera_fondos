@@ -2,7 +2,7 @@
     package="com.github.webierta.cartera_fondos">
    <uses-permission android:name="android.permission.INTERNET"/>
    <application
-        android:label="Cartera Fondos"
+        android:label="CarFoIn$"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
