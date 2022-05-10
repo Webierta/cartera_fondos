@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 class Valor {
   final int date;
   final double precio;
@@ -13,6 +15,12 @@ class Valor {
   List<Valor> get valores {
     return [..._valores];
   }
+
+  /*DateTime get fecha {
+    final DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(date * 1000);
+    //String fechaFormat = DateFormat('yyyy-MM-dd').format(dateTime);
+    return DateTime(dateTime.year, dateTime.month, dateTime.day);
+  }*/
 
   int get valoresCount {
     return _valores.length;

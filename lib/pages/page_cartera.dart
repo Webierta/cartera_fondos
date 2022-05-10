@@ -203,7 +203,7 @@ class _PageCarteraState extends State<PageCartera> {
         spaceBetweenChildren: 4,
         children: [
           SpeedDialChild(
-            child: const Icon(Icons.list), //dns // list  //
+            child: const Icon(Icons.storage), //dns // list  //
             label: 'Base de Datos local',
             backgroundColor: Colors.blue,
             foregroundColor: Colors.white,

@@ -9,6 +9,10 @@ import '../models/valor.dart';
 import '../routes.dart';
 import '../services/api_service.dart';
 import '../services/sqlite_service.dart';
+//import '../widgets/grafico.dart';
+import '../widgets/grafico_fondo.dart';
+import '../widgets/main_fondo.dart';
+import '../widgets/tabla_fondo.dart';
 
 enum ItemMenuFondo { editar, suscribir, reembolsar, eliminar, exportar }
 
@@ -22,6 +26,8 @@ class PageFondo extends StatefulWidget {
 }
 
 class _PageFondoState extends State<PageFondo> {
+  int _selectedIndex = 0;
+
   late SqliteService _sqlite;
   late ApiService apiService;
 
@@ -31,8 +37,11 @@ class _PageFondoState extends State<PageFondo> {
   bool loading = true;
   String msgLoading = '';
 
-  int _currentSortColumn = 0;
-  bool _isSortAsc = true;
+  //int _currentSortColumn = 0;
+  //bool _isSortAsc = true;
+
+  var listaWidgets = <Widget>[];
+  late ListView mainFondo;
 
   @override
   void initState() {
@@ -67,6 +76,12 @@ class _PageFondoState extends State<PageFondo> {
     setState(() {
       valores = data;
       valoresCopy = [...valores];
+
+      mainFondo = buildMainFondo();
+      //listaWidgets.add(mainFondo);
+      listaWidgets.add(MainFondo(cartera: widget.cartera, fondo: widget.fondo));
+      listaWidgets.add(TablaFondo(valores: valores));
+      listaWidgets.add(GraficoFondo(valores: valores));
     });
 
     /*if (valores.isNotEmpty) {
@@ -75,6 +90,113 @@ class _PageFondoState extends State<PageFondo> {
         lastValor = valores.last;
       });
     }*/
+  }
+
+  ListView buildMainFondo() {
+    return ListView(
+      shrinkWrap: true,
+      padding: const EdgeInsets.all(10),
+      children: [
+        Card(
+          child: ListTile(
+            contentPadding: const EdgeInsets.all(10),
+            leading: const Icon(Icons.assessment, size: 32),
+            title: Text(
+              widget.fondo.name,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            subtitle: Text(
+              widget.fondo.isin,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Card(
+          child: Column(
+            children: [
+              ListTile(
+                leading: Text(
+                  widget.fondo.moneda ?? '',
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+                title: valores.isEmpty
+                    ? const Text('Precio: Sin datos')
+                    : Center(
+                        child: Text(
+                          //'${widget.fondo.lastPrecio ?? ''}',
+                          '${valores.first.precio}',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ),
+                subtitle: valores.isEmpty
+                    ? const Text('Descarga el último valor liquidativo')
+                    : Center(
+                        child: Text(
+                          //widget.fondo.lastDate != null
+                          valores.isNotEmpty
+                              ?
+                              //_epochFormat(widget.fondo.lastDate!) : '',
+                              _epochFormat(valores.first.date)
+                              : '',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.refresh, color: Colors.blue),
+                  onPressed: updateValor,
+                ),
+              ),
+              const SizedBox(height: 10),
+              valores.isEmpty
+                  ? const SizedBox(height: 0)
+                  : ListTile(
+                      title: widget.fondo.participaciones > 0
+                          ? Text(
+                              'Patrimonio: ${widget.fondo.participaciones * widget.fondo.lastPrecio!}')
+                          : const Text('Patrimonio: Sin datos'),
+                      subtitle: widget.fondo.participaciones > 0
+                          ? Text('Participaciones: ${widget.fondo.participaciones}')
+                          : const Text(
+                              'Subscribe participaciones de este Fondo para seguir la evolución de tu inversión'),
+                      // TODO: nueva ventana con Fecha / participaciones y VL
+                      trailing: IconButton(
+                        icon: const Icon(Icons.shopping_cart, color: Colors.blue),
+                        onPressed: () {},
+                      ),
+                    ),
+              const SizedBox(height: 10),
+              widget.fondo.participaciones == 0
+                  ? const SizedBox(height: 0)
+                  // TODO: GET DATOS REALES
+                  : const ListTile(
+                      title: Text('Rendimiento:'),
+                      isThreeLine: true,
+                      subtitle: Text('Rentabilidad: \nTAE: '),
+                    ),
+            ],
+          ),
+        ),
+        //valores.length < 3 ? const SizedBox(height: 0) : Grafico(valores),
+        //valores.length < 3 ? const SizedBox(height: 0) : Grafico(valores: valores),
+        //const SizedBox(height: 10),
+        ////valores.length < 3 ? const SizedBox(height: 0) : GraficoFondo(valores: valores),
+        /*loading
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 50, left: 20, right: 20),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 50),
+                      const LinearProgressIndicator(),
+                      Text(msgLoading),
+                    ],
+                  ),
+                )
+              : valores.isEmpty
+                  ? const SizedBox(height: 0)
+                  : TablaFondo(valores: valores),*/
+      ],
+    );
   }
 
   PopupMenuItem _buildMenuItem(String title, IconData iconData, int position) {
@@ -114,45 +236,16 @@ class _PageFondoState extends State<PageFondo> {
     } else {}
   }
 
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () async {
-            await _refreshValores();
-            ScaffoldMessenger.of(context).removeCurrentSnackBar();
-            Navigator.of(context).pushNamed(
-              RouteGenerator.carteraPage,
-              arguments: widget.cartera,
-            );
-          },
-        ),
-        title: const Text('DETALLE FONDO'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.event_repeat),
-            onPressed: () => getRangeValores(context),
-          ),
-          PopupMenuButton(
-            onSelected: (value) => _onMenuItemSelected(value as int),
-            color: Colors.blue,
-            offset: Offset(0.0, AppBar().preferredSize.height),
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-            ),
-            itemBuilder: (ctx) => [
-              _buildMenuItem('Editar', Icons.edit, ItemMenuFondo.editar.index),
-              _buildMenuItem('Suscribir', Icons.login, ItemMenuFondo.suscribir.index),
-              _buildMenuItem('Reembolsar', Icons.logout, ItemMenuFondo.reembolsar.index),
-              _buildMenuItem('Eliminar datos', Icons.delete_forever, ItemMenuFondo.eliminar.index),
-              _buildMenuItem('Exportar', Icons.download, ItemMenuFondo.exportar.index),
-            ],
-          ),
-        ],
-      ),
-      body: ListView(
+    /*List<Widget> _widgetOptions = <Widget>[
+      ListView(
         shrinkWrap: true,
         padding: const EdgeInsets.all(10),
         children: [
@@ -236,9 +329,11 @@ class _PageFondoState extends State<PageFondo> {
               ],
             ),
           ),
-          //TODO: CARD -> Grafico
-          const SizedBox(height: 10),
-          loading
+          //valores.length < 3 ? const SizedBox(height: 0) : Grafico(valores),
+          //valores.length < 3 ? const SizedBox(height: 0) : Grafico(valores: valores),
+          //const SizedBox(height: 10),
+          ////valores.length < 3 ? const SizedBox(height: 0) : GraficoFondo(valores: valores),
+          */ /*loading
               ? Padding(
                   padding: const EdgeInsets.only(top: 50, left: 20, right: 20),
                   child: Column(
@@ -250,92 +345,84 @@ class _PageFondoState extends State<PageFondo> {
                   ),
                 )
               : valores.isEmpty
-                  ? const Text('')
-                  : Card(
-                      child: ListView(
-                        shrinkWrap: true,
-                        physics: const ClampingScrollPhysics(),
-                        children: [
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: DataTable(
-                              sortColumnIndex: _currentSortColumn,
-                              sortAscending: _isSortAsc,
-                              columnSpacing: 30,
-                              //horizontalMargin: 0,
-                              columns: [
-                                DataColumn(
-                                    label: const Text('#'),
-                                    numeric: true,
-                                    onSort: (columnIndex, _) {
-                                      setState(() {
-                                        _currentSortColumn = columnIndex;
-                                        if (!_isSortAsc) {
-                                          valoresCopy.sort((a, b) => b.date.compareTo(a.date));
-                                        } else {
-                                          valoresCopy.sort((a, b) => a.date.compareTo(b.date));
-                                        }
-                                        _isSortAsc = !_isSortAsc;
-                                      });
-                                    }),
-                                const DataColumn(label: Text('FECHA'), numeric: true),
-                                const DataColumn(label: Text('PRECIO'), numeric: true),
-                                const DataColumn(label: Text('+/-'), numeric: true),
-                              ],
-                              rows: valoresCopy
-                                  .map((valor) => DataRow(cells: [
-                                        //DataCell(Text('${valores.indexOf(valor)}')),
-                                        DataCell(_isSortAsc
-                                            ? Text(
-                                                '${valoresCopy.length - valoresCopy.indexOf(valor)}')
-                                            : Text('${valoresCopy.indexOf(valor) + 1}')),
-                                        DataCell(Text(_epochFormat(valor.date))),
-                                        //TODO: control número de decimales: máx 5
-                                        DataCell(Text('${valor.precio}')),
-                                        _isSortAsc
-                                            ? DataCell(valoresCopy.length >
-                                                    (valoresCopy.indexOf(valor) + 1)
-                                                ? Text(
-                                                    (valor.precio -
-                                                            valoresCopy[
-                                                                    valoresCopy.indexOf(valor) + 1]
-                                                                .precio)
-                                                        .toStringAsFixed(2),
-                                                    style: valor.precio -
-                                                                valoresCopy[
-                                                                        valoresCopy.indexOf(valor) +
-                                                                            1]
-                                                                    .precio <
-                                                            0
-                                                        ? const TextStyle(color: Colors.red)
-                                                        : const TextStyle(color: Colors.green),
-                                                  )
-                                                : const Text(''))
-                                            : DataCell(valoresCopy.length >
-                                                        (valoresCopy.indexOf(valor) - 1) &&
-                                                    valoresCopy.indexOf(valor) > 0
-                                                ? Text(
-                                                    (valoresCopy[valoresCopy.indexOf(valor) - 1]
-                                                                .precio -
-                                                            valor.precio)
-                                                        .toStringAsFixed(2),
-                                                    style:
-                                                        valoresCopy[valoresCopy.indexOf(valor) - 1]
-                                                                        .precio -
-                                                                    valor.precio <
-                                                                0
-                                                            ? const TextStyle(color: Colors.red)
-                                                            : const TextStyle(color: Colors.green),
-                                                  )
-                                                : const Text('')),
-                                      ]))
-                                  .toList(),
-                            ),
-                          )
-                        ],
-                      ),
-                    ),
+                  ? const SizedBox(height: 0)
+                  : TablaFondo(valores: valores),*/ /*
         ],
+      ),
+      TablaFondo(valores: valores),
+      GraficoFondo(valores: valores),
+    ];*/
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () async {
+            await _refreshValores();
+            ScaffoldMessenger.of(context).removeCurrentSnackBar();
+            Navigator.of(context).pushNamed(
+              RouteGenerator.carteraPage,
+              arguments: widget.cartera,
+            );
+          },
+        ),
+        title: const Text('DETALLE FONDO'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.event_repeat),
+            onPressed: () => getRangeValores(context),
+          ),
+          PopupMenuButton(
+            onSelected: (value) => _onMenuItemSelected(value as int),
+            color: Colors.blue,
+            offset: Offset(0.0, AppBar().preferredSize.height),
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8.0)),
+            ),
+            itemBuilder: (ctx) => [
+              _buildMenuItem('Editar', Icons.edit, ItemMenuFondo.editar.index),
+              _buildMenuItem('Suscribir', Icons.login, ItemMenuFondo.suscribir.index),
+              _buildMenuItem('Reembolsar', Icons.logout, ItemMenuFondo.reembolsar.index),
+              _buildMenuItem('Eliminar datos', Icons.delete_forever, ItemMenuFondo.eliminar.index),
+              _buildMenuItem('Exportar', Icons.download, ItemMenuFondo.exportar.index),
+            ],
+          ),
+        ],
+      ),
+      /*body: listaWidgets.length == 3
+          ? listaWidgets.elementAt(_selectedIndex)
+          : CircularProgressIndicator(),*/
+
+      body: loading || listaWidgets.length != 3
+          ? Padding(
+              padding: const EdgeInsets.only(top: 50, left: 20, right: 20),
+              child: Column(
+                children: [
+                  const SizedBox(height: 50),
+                  const LinearProgressIndicator(),
+                  Text(msgLoading),
+                ],
+              ),
+            )
+          : listaWidgets.elementAt(_selectedIndex),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.assessment),
+            label: 'Fondo',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.table_rows_outlined), //table_rows_outlined list_alt
+            label: 'Tabla',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.timeline),
+            label: 'Gráfico',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.blue,
+        onTap: _onItemTapped,
       ),
       /*floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.event_repeat),
