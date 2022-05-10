@@ -4,12 +4,14 @@ import 'package:intl/intl.dart';
 import '../models/cartera.dart';
 import '../models/fondo.dart';
 import '../models/valor.dart';
+import '../routes.dart';
 import '../services/api_service.dart';
 import '../services/sqlite_service.dart';
 
 class MainFondo extends StatefulWidget {
   final Cartera cartera;
   final Fondo fondo;
+  //final Future<dynamic> refresh;
   const MainFondo({Key? key, required this.cartera, required this.fondo}) : super(key: key);
 
   @override
@@ -60,6 +62,8 @@ class _MainFondoState extends State<MainFondo> {
       valores = data;
       valoresCopy = [...valores];
     });
+
+    //widget.refresh;
     /*if (valores.isNotEmpty) {
       //TODO: ordenar primero por date
       setState(() {
@@ -119,41 +123,44 @@ class _MainFondoState extends State<MainFondo> {
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                       ),
-                trailing: IconButton(
+                // TRAILING HOJA FECHA
+                /*trailing: IconButton(
                   icon: const Icon(Icons.refresh, color: Colors.blue),
                   onPressed: updateValor,
-                ),
+                ),*/
               ),
-              const SizedBox(height: 10),
-              valores.isEmpty
-                  ? const SizedBox(height: 0)
-                  : ListTile(
-                      title: widget.fondo.participaciones > 0
-                          ? Text(
-                              'Patrimonio: ${widget.fondo.participaciones * widget.fondo.lastPrecio!}')
-                          : const Text('Patrimonio: Sin datos'),
-                      subtitle: widget.fondo.participaciones > 0
-                          ? Text('Participaciones: ${widget.fondo.participaciones}')
-                          : const Text(
-                              'Subscribe participaciones de este Fondo para seguir la evolución de tu inversión'),
-                      // TODO: nueva ventana con Fecha / participaciones y VL
-                      trailing: IconButton(
-                        icon: const Icon(Icons.shopping_cart, color: Colors.blue),
-                        onPressed: () {},
-                      ),
-                    ),
-              const SizedBox(height: 10),
-              widget.fondo.participaciones == 0
-                  ? const SizedBox(height: 0)
-                  // TODO: GET DATOS REALES
-                  : const ListTile(
-                      title: Text('Rendimiento:'),
-                      isThreeLine: true,
-                      subtitle: Text('Rentabilidad: \nTAE: '),
-                    ),
             ],
           ),
         ),
+        if (valores.isNotEmpty)
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  title: widget.fondo.participaciones > 0
+                      ? Text(
+                          'Patrimonio: ${widget.fondo.participaciones * widget.fondo.lastPrecio!}')
+                      : const Text('Patrimonio: Sin datos'),
+                  subtitle: widget.fondo.participaciones > 0
+                      ? Text('Participaciones: ${widget.fondo.participaciones}')
+                      : const Text(
+                          'Subscribe participaciones de este Fondo para seguir la evolución de tu inversión'),
+                  // TODO: nueva ventana con Fecha / participaciones y VL
+                  trailing: IconButton(
+                    icon: const Icon(Icons.shopping_cart, color: Colors.blue),
+                    onPressed: () {},
+                  ),
+                ),
+                const SizedBox(height: 10),
+                if (widget.fondo.participaciones != 0)
+                  const ListTile(
+                    title: Text('Rendimiento:'),
+                    isThreeLine: true,
+                    subtitle: Text('Rentabilidad: \nTAE: '),
+                  ),
+              ],
+            ),
+          ),
         //valores.length < 3 ? const SizedBox(height: 0) : Grafico(valores),
         //valores.length < 3 ? const SizedBox(height: 0) : Grafico(valores: valores),
         //const SizedBox(height: 10),
@@ -176,7 +183,7 @@ class _MainFondoState extends State<MainFondo> {
     );
   }
 
-  void updateValor() async {
+  /*void updateValor() async {
     //TODO: msg updating
     final getDataApi = await apiService.getDataApi(widget.fondo.isin);
     if (getDataApi != null) {
@@ -209,7 +216,45 @@ class _MainFondoState extends State<MainFondo> {
     } else {
       print('ERROR GET DATAAPI');
     }
-  }
+  }*/
+
+  /*void getRangeValores(BuildContext context) async {
+    final newRange = await Navigator.of(context).pushNamed(
+      RouteGenerator.inputRange,
+      arguments: widget.fondo,
+    );
+    if (newRange != null) {
+      var range = newRange as DateTimeRange;
+      String from = DateFormat('yyyy-MM-dd').format(range.start);
+      String to = DateFormat('yyyy-MM-dd').format(range.end);
+
+      setState(() {
+        loading = true;
+        msgLoading = 'Conectando...';
+      });
+      final getDateApiRange = await apiService
+          .getDataApiRange(widget.fondo.isin, to, from)
+          ?.whenComplete(() => setState(() => msgLoading = 'Descargando datos...'));
+      //print(getDateApiRange?.length);
+      var newListValores = <Valor>[];
+      if (getDateApiRange != null) {
+        for (var dataApi in getDateApiRange) {
+          newListValores.add(Valor(date: dataApi.epochSecs, precio: dataApi.price));
+        }
+        await _sqlite
+            .insertListVL(widget.cartera, widget.fondo, newListValores)
+            .whenComplete(() => setState(() => msgLoading = 'Escribiendo datos...'));
+        await _refreshValores();
+        setState(() {
+          loading = false;
+          msgLoading = '';
+        });
+      } else {
+        setState(() => loading = false);
+        print('ERROR GET DATA API RANGE');
+      }
+    }
+  }*/
 
   String _epochFormat(int epoch) {
     final DateTime date = DateTime.fromMillisecondsSinceEpoch(epoch * 1000);

@@ -198,25 +198,13 @@ class _PageCarteraState extends State<PageCartera> {
                 )
           : const Center(child: Text('No hay fondos guardados.')),
       floatingActionButton: SpeedDial(
+        animatedIcon: AnimatedIcons.menu_close,
         icon: Icons.addchart,
         spacing: 8,
         spaceBetweenChildren: 4,
+        overlayColor: Colors.blue,
+        overlayOpacity: 0.2,
         children: [
-          SpeedDialChild(
-            child: const Icon(Icons.storage), //dns // list  //
-            label: 'Base de Datos local',
-            backgroundColor: Colors.blue,
-            foregroundColor: Colors.white,
-            onTap: () async {
-              ScaffoldMessenger.of(context).removeCurrentSnackBar();
-              final newFondo = await Navigator.of(context).pushNamed(RouteGenerator.searchFondo);
-              if (newFondo != null) {
-                addFondo(newFondo as Fondo);
-              } else {
-                _showMsg(msg: 'Sin cambios en la cartera.');
-              }
-            },
-          ),
           SpeedDialChild(
             child: const Icon(Icons.search, color: Colors.white),
             label: 'Buscar online por ISIN',
@@ -227,6 +215,21 @@ class _PageCarteraState extends State<PageCartera> {
                 RouteGenerator.inputFondo,
                 arguments: widget.cartera,
               );
+              if (newFondo != null) {
+                addFondo(newFondo as Fondo);
+              } else {
+                _showMsg(msg: 'Sin cambios en la cartera.');
+              }
+            },
+          ),
+          SpeedDialChild(
+            child: const Icon(Icons.storage), //dns // list  //
+            label: 'Base de Datos local',
+            backgroundColor: Colors.blue,
+            foregroundColor: Colors.white,
+            onTap: () async {
+              ScaffoldMessenger.of(context).removeCurrentSnackBar();
+              final newFondo = await Navigator.of(context).pushNamed(RouteGenerator.searchFondo);
               if (newFondo != null) {
                 addFondo(newFondo as Fondo);
               } else {
@@ -336,7 +339,7 @@ class _PageCarteraState extends State<PageCartera> {
         }
       }
     } else {
-      _showMsg(msg: 'Nada que eliminar');
+      _showMsg(msg: 'Nada que actualizar');
       setState(() {
         _isUpdating = false;
         _msgUpdating = '';

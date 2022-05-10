@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:charts_flutter/flutter.dart';
-import 'package:charts_flutter/src/text_element.dart';
-import 'package:charts_flutter/src/text_style.dart' as style;
+//import 'package:charts_flutter/src/text_element.dart';
+//import 'package:charts_flutter/src/text_style.dart' as style;
 import 'package:intl/intl.dart';
-import 'dart:math';
+//import 'dart:math';
 
 import '../models/valor.dart';
 
@@ -40,13 +40,16 @@ class _GraficoFondoState extends State<GraficoFondo> {
 
   @override
   Widget build(BuildContext context) {
+    List<double> precios = widget.valores.reversed.map((entry) => entry.precio).toList();
+    var precioMedio = precios.reduce((a, b) => a + b) / precios.length;
+
     return ListView(
       shrinkWrap: true,
       physics: const ClampingScrollPhysics(),
       padding: const EdgeInsets.all(8),
       children: [
         SizedBox(
-          height: 300,
+          height: MediaQuery.of(context).size.height / 1.35,
           child: TimeSeriesChart(
             [
               Series<Valor, DateTime>(
@@ -63,7 +66,32 @@ class _GraficoFondoState extends State<GraficoFondo> {
               tickFormatterSpec: charts.BasicNumericTickFormatterSpec(
                       (measure) => exp(measure).round().toString()),
             ),*/
-            behaviors: [LinePointHighlighter(symbolRenderer: CircleSymbolRenderer())],
+            behaviors: [
+              ChartTitle(selectedFecha != null
+                  ? '${DateFormat('dd/MM/yy').format(selectedFecha!)}: $selectedPrecio'
+                  : 'Histórico'),
+              LinePointHighlighter(symbolRenderer: CircleSymbolRenderer()),
+              LinePointHighlighter(
+                  symbolRenderer: CircleSymbolRenderer(),
+                  showHorizontalFollowLine: LinePointHighlighterFollowLineType.all,
+                  showVerticalFollowLine: LinePointHighlighterFollowLineType.nearest),
+              RangeAnnotation([
+                LineAnnotationSegment(
+                  precioMedio,
+                  RangeAnnotationAxisType.measure,
+                  startLabel: 'Valor medio: ${precioMedio.toStringAsFixed(2)}',
+                  color: MaterialPalette.red.shadeDefault,
+                  strokeWidthPx: 1.0,
+                  dashPattern: [1, 1],
+                ),
+                /*if (selectedFecha != null)
+                  LineAnnotationSegment(
+                    selectedPrecio!,
+                    RangeAnnotationAxisType.measure,
+                    color: MaterialPalette.red.shadeDefault,
+                  ),*/
+              ]),
+            ],
             domainAxis: const DateTimeAxisSpec(
               tickFormatterSpec: AutoDateTimeTickFormatterSpec(
                 /*day: charts.TimeFormatterSpec(
@@ -103,7 +131,6 @@ class _GraficoFondoState extends State<GraficoFondo> {
                 //labelOffsetFromAxisPx: -15,
               ),
             ),
-
             /*behaviors: [
               LinePointHighlighter(symbolRenderer: charts.CircleSymbolRenderer()),
               //charts.SlidingViewport(),
@@ -126,18 +153,16 @@ class _GraficoFondoState extends State<GraficoFondo> {
                   //print(model.selectedSeries[0].measureFn(model.selectedDatum[0].index));
                   var fecha = datefromEpoch(model.selectedDatum.first.datum.date);
                   var precio = model.selectedDatum.first.datum.precio;
-                  print(fecha);
-                  print(precio);
-                  /*setState(() {
+                  setState(() {
                     selectedFecha = fecha;
                     selectedPrecio = precio;
-                  });*/
+                  });
                 }
               })
             ],
           ),
         ),
-        if (selectedFecha != null)
+        /*if (selectedFecha != null)
           Padding(
             padding: const EdgeInsets.all(10),
             child: Text(DateFormat('dd/MM/yy').format(selectedFecha!)),
@@ -146,7 +171,7 @@ class _GraficoFondoState extends State<GraficoFondo> {
           Padding(
             padding: const EdgeInsets.all(10),
             child: Text(selectedPrecio!.toStringAsFixed(2)),
-          ),
+          ),*/
       ],
     );
   }

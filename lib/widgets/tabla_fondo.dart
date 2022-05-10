@@ -10,6 +10,7 @@ class TablaFondo extends StatefulWidget {
   @override
   State<TablaFondo> createState() => _TablaFondoState();
 }
+//TODO OBTENER VALORES DESDE AQUI??
 
 class _TablaFondoState extends State<TablaFondo> {
   var valoresCopy = <Valor>[];

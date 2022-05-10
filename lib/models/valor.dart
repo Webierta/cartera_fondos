@@ -10,6 +10,10 @@ class Valor {
     return {'date': date, 'precio': precio};
   }
 
+  /*List<DateTime, double> toMapLine() {
+    return [DateTime.fromMillisecondsSinceEpoch(date * 1000): precio];
+  }*/
+
   final _valores = <Valor>[];
 
   List<Valor> get valores {

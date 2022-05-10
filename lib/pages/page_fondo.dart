@@ -1,5 +1,6 @@
 //import 'package:cartera_fondos/models/data_api_range.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:intl/intl.dart';
 
 import '../models/cartera.dart';
@@ -14,6 +15,7 @@ import '../widgets/grafico_fondo.dart';
 import '../widgets/main_fondo.dart';
 import '../widgets/tabla_fondo.dart';
 
+enum ItemRefresh { update, getRange }
 enum ItemMenuFondo { editar, suscribir, reembolsar, eliminar, exportar }
 
 class PageFondo extends StatefulWidget {
@@ -37,9 +39,6 @@ class _PageFondoState extends State<PageFondo> {
   bool loading = true;
   String msgLoading = '';
 
-  //int _currentSortColumn = 0;
-  //bool _isSortAsc = true;
-
   var listaWidgets = <Widget>[];
   late ListView mainFondo;
 
@@ -57,6 +56,7 @@ class _PageFondoState extends State<PageFondo> {
 
   _refreshValores() async {
     setState(() {
+      loading = true;
       valores = <Valor>[];
       valoresCopy = <Valor>[];
     });
@@ -76,12 +76,16 @@ class _PageFondoState extends State<PageFondo> {
     setState(() {
       valores = data;
       valoresCopy = [...valores];
-
-      mainFondo = buildMainFondo();
-      //listaWidgets.add(mainFondo);
-      listaWidgets.add(MainFondo(cartera: widget.cartera, fondo: widget.fondo));
+      listaWidgets.clear();
+      listaWidgets.add(MainFondo(
+        cartera: widget.cartera,
+        fondo: widget.fondo,
+        //refresh: refreshValores(),
+      ));
       listaWidgets.add(TablaFondo(valores: valores));
       listaWidgets.add(GraficoFondo(valores: valores));
+      loading = false;
+      msgLoading = '';
     });
 
     /*if (valores.isNotEmpty) {
@@ -92,110 +96,16 @@ class _PageFondoState extends State<PageFondo> {
     }*/
   }
 
-  ListView buildMainFondo() {
-    return ListView(
-      shrinkWrap: true,
-      padding: const EdgeInsets.all(10),
-      children: [
-        Card(
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(10),
-            leading: const Icon(Icons.assessment, size: 32),
-            title: Text(
-              widget.fondo.name,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            subtitle: Text(
-              widget.fondo.isin,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Card(
-          child: Column(
-            children: [
-              ListTile(
-                leading: Text(
-                  widget.fondo.moneda ?? '',
-                  style: Theme.of(context).textTheme.labelLarge,
-                ),
-                title: valores.isEmpty
-                    ? const Text('Precio: Sin datos')
-                    : Center(
-                        child: Text(
-                          //'${widget.fondo.lastPrecio ?? ''}',
-                          '${valores.first.precio}',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                      ),
-                subtitle: valores.isEmpty
-                    ? const Text('Descarga el último valor liquidativo')
-                    : Center(
-                        child: Text(
-                          //widget.fondo.lastDate != null
-                          valores.isNotEmpty
-                              ?
-                              //_epochFormat(widget.fondo.lastDate!) : '',
-                              _epochFormat(valores.first.date)
-                              : '',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.refresh, color: Colors.blue),
-                  onPressed: updateValor,
-                ),
-              ),
-              const SizedBox(height: 10),
-              valores.isEmpty
-                  ? const SizedBox(height: 0)
-                  : ListTile(
-                      title: widget.fondo.participaciones > 0
-                          ? Text(
-                              'Patrimonio: ${widget.fondo.participaciones * widget.fondo.lastPrecio!}')
-                          : const Text('Patrimonio: Sin datos'),
-                      subtitle: widget.fondo.participaciones > 0
-                          ? Text('Participaciones: ${widget.fondo.participaciones}')
-                          : const Text(
-                              'Subscribe participaciones de este Fondo para seguir la evolución de tu inversión'),
-                      // TODO: nueva ventana con Fecha / participaciones y VL
-                      trailing: IconButton(
-                        icon: const Icon(Icons.shopping_cart, color: Colors.blue),
-                        onPressed: () {},
-                      ),
-                    ),
-              const SizedBox(height: 10),
-              widget.fondo.participaciones == 0
-                  ? const SizedBox(height: 0)
-                  // TODO: GET DATOS REALES
-                  : const ListTile(
-                      title: Text('Rendimiento:'),
-                      isThreeLine: true,
-                      subtitle: Text('Rentabilidad: \nTAE: '),
-                    ),
-            ],
-          ),
-        ),
-        //valores.length < 3 ? const SizedBox(height: 0) : Grafico(valores),
-        //valores.length < 3 ? const SizedBox(height: 0) : Grafico(valores: valores),
-        //const SizedBox(height: 10),
-        ////valores.length < 3 ? const SizedBox(height: 0) : GraficoFondo(valores: valores),
-        /*loading
-              ? Padding(
-                  padding: const EdgeInsets.only(top: 50, left: 20, right: 20),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 50),
-                      const LinearProgressIndicator(),
-                      Text(msgLoading),
-                    ],
-                  ),
-                )
-              : valores.isEmpty
-                  ? const SizedBox(height: 0)
-                  : TablaFondo(valores: valores),*/
-      ],
+  PopupMenuItem _buildMenuRefresh(String title, IconData iconData, int position) {
+    return PopupMenuItem(
+      value: position,
+      child: Row(
+        children: [
+          Icon(iconData, color: Colors.white),
+          const SizedBox(width: 10),
+          Text(title),
+        ],
+      ),
     );
   }
 
@@ -221,6 +131,14 @@ class _PageFondoState extends State<PageFondo> {
     );
   }
 
+  _onMenuRefresh(int value) {
+    if (value == ItemRefresh.update.index) {
+      updateValor();
+    } else if (value == ItemRefresh.getRange.index) {
+      getRangeValores(context);
+    } else {}
+  }
+
   // TODO: ACCIONES MENU
   _onMenuItemSelected(int value) {
     if (value == ItemMenuFondo.editar.index) {
@@ -236,123 +154,14 @@ class _PageFondoState extends State<PageFondo> {
     } else {}
   }
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+  void _onItemTapped(int index, [bool update = false]) async {
+    // SOLO SI SE HAN ACTUALIZADO LOS DATOS
+    //await _refreshValores();
+    setState(() => _selectedIndex = index);
   }
 
   @override
   Widget build(BuildContext context) {
-    /*List<Widget> _widgetOptions = <Widget>[
-      ListView(
-        shrinkWrap: true,
-        padding: const EdgeInsets.all(10),
-        children: [
-          Card(
-            child: ListTile(
-              contentPadding: const EdgeInsets.all(10),
-              leading: const Icon(Icons.assessment, size: 32),
-              title: Text(
-                widget.fondo.name,
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              subtitle: Text(
-                widget.fondo.isin,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Card(
-            child: Column(
-              children: [
-                ListTile(
-                  leading: Text(
-                    widget.fondo.moneda ?? '',
-                    style: Theme.of(context).textTheme.labelLarge,
-                  ),
-                  title: valores.isEmpty
-                      ? const Text('Precio: Sin datos')
-                      : Center(
-                          child: Text(
-                            //'${widget.fondo.lastPrecio ?? ''}',
-                            '${valores.first.precio}',
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                        ),
-                  subtitle: valores.isEmpty
-                      ? const Text('Descarga el último valor liquidativo')
-                      : Center(
-                          child: Text(
-                            //widget.fondo.lastDate != null
-                            valores.isNotEmpty
-                                ?
-                                //_epochFormat(widget.fondo.lastDate!) : '',
-                                _epochFormat(valores.first.date)
-                                : '',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                        ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.refresh, color: Colors.blue),
-                    onPressed: updateValor,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                valores.isEmpty
-                    ? const SizedBox(height: 0)
-                    : ListTile(
-                        title: widget.fondo.participaciones > 0
-                            ? Text(
-                                'Patrimonio: ${widget.fondo.participaciones * widget.fondo.lastPrecio!}')
-                            : const Text('Patrimonio: Sin datos'),
-                        subtitle: widget.fondo.participaciones > 0
-                            ? Text('Participaciones: ${widget.fondo.participaciones}')
-                            : const Text(
-                                'Subscribe participaciones de este Fondo para seguir la evolución de tu inversión'),
-                        // TODO: nueva ventana con Fecha / participaciones y VL
-                        trailing: IconButton(
-                          icon: const Icon(Icons.shopping_cart, color: Colors.blue),
-                          onPressed: () {},
-                        ),
-                      ),
-                const SizedBox(height: 10),
-                widget.fondo.participaciones == 0
-                    ? const SizedBox(height: 0)
-                    // TODO: GET DATOS REALES
-                    : const ListTile(
-                        title: Text('Rendimiento:'),
-                        isThreeLine: true,
-                        subtitle: Text('Rentabilidad: \nTAE: '),
-                      ),
-              ],
-            ),
-          ),
-          //valores.length < 3 ? const SizedBox(height: 0) : Grafico(valores),
-          //valores.length < 3 ? const SizedBox(height: 0) : Grafico(valores: valores),
-          //const SizedBox(height: 10),
-          ////valores.length < 3 ? const SizedBox(height: 0) : GraficoFondo(valores: valores),
-          */ /*loading
-              ? Padding(
-                  padding: const EdgeInsets.only(top: 50, left: 20, right: 20),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 50),
-                      const LinearProgressIndicator(),
-                      Text(msgLoading),
-                    ],
-                  ),
-                )
-              : valores.isEmpty
-                  ? const SizedBox(height: 0)
-                  : TablaFondo(valores: valores),*/ /*
-        ],
-      ),
-      TablaFondo(valores: valores),
-      GraficoFondo(valores: valores),
-    ];*/
-
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -366,12 +175,30 @@ class _PageFondoState extends State<PageFondo> {
             );
           },
         ),
-        title: const Text('DETALLE FONDO'),
+        // TODO: variable segun TAB ??
+        title: Text(widget.fondo.name),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.event_repeat),
-            onPressed: () => getRangeValores(context),
+          /*IconButton(
+            icon: const Icon(Icons.update),
+            onPressed: () => updateValor(),
           ),
+          IconButton(
+            icon: const Icon(Icons.date_range),
+            onPressed: () => getRangeValores(context),
+          ),*/
+          /*PopupMenuButton(
+            icon: const Icon(Icons.refresh),
+            onSelected: (value) => _onMenuRefresh(value as int),
+            color: Colors.blue,
+            offset: Offset(0.0, AppBar().preferredSize.height),
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8.0)),
+            ),
+            itemBuilder: (ctx) => [
+              _buildMenuRefresh('Último valor', Icons.update, ItemRefresh.update.index),
+              _buildMenuRefresh('Intervalo de fechas', Icons.date_range, ItemRefresh.getRange.index)
+            ],
+          ),*/
           PopupMenuButton(
             onSelected: (value) => _onMenuItemSelected(value as int),
             color: Colors.blue,
@@ -381,6 +208,7 @@ class _PageFondoState extends State<PageFondo> {
             ),
             itemBuilder: (ctx) => [
               _buildMenuItem('Editar', Icons.edit, ItemMenuFondo.editar.index),
+              //TODO SUBPAGE de operar con suscribir y reembolsar
               _buildMenuItem('Suscribir', Icons.login, ItemMenuFondo.suscribir.index),
               _buildMenuItem('Reembolsar', Icons.logout, ItemMenuFondo.reembolsar.index),
               _buildMenuItem('Eliminar datos', Icons.delete_forever, ItemMenuFondo.eliminar.index),
@@ -389,10 +217,6 @@ class _PageFondoState extends State<PageFondo> {
           ),
         ],
       ),
-      /*body: listaWidgets.length == 3
-          ? listaWidgets.elementAt(_selectedIndex)
-          : CircularProgressIndicator(),*/
-
       body: loading || listaWidgets.length != 3
           ? Padding(
               padding: const EdgeInsets.only(top: 50, left: 20, right: 20),
@@ -428,7 +252,85 @@ class _PageFondoState extends State<PageFondo> {
         child: const Icon(Icons.event_repeat),
         onPressed: getRangeValores,
       ),*/
+      floatingActionButton: SpeedDial(
+        animatedIcon: AnimatedIcons.menu_close,
+        icon: Icons.refresh,
+        spacing: 8,
+        spaceBetweenChildren: 4,
+        overlayColor: Colors.blue,
+        overlayOpacity: 0.2,
+        children: [
+          SpeedDialChild(
+            child: const Icon(Icons.date_range), //dns // list  //
+            label: 'Valores históricos',
+            backgroundColor: Colors.blue,
+            foregroundColor: Colors.white,
+            onTap: () {
+              ScaffoldMessenger.of(context).removeCurrentSnackBar();
+              getRangeValores(context);
+              // final newFondo = await Navigator.of(context).pushNamed(RouteGenerator.searchFondo);
+              // if (newFondo != null) {
+              //   addFondo(newFondo as Fondo);
+              // } else {
+              //   _showMsg(msg: 'Sin cambios en la cartera.');
+              // }
+            },
+          ),
+          SpeedDialChild(
+            child: const Icon(Icons.update), //dns // list  //
+            label: 'Actualizar último valor',
+            backgroundColor: Colors.blue,
+            foregroundColor: Colors.white,
+            onTap: () {
+              ScaffoldMessenger.of(context).removeCurrentSnackBar();
+              updateValor();
+              // final newFondo = await Navigator.of(context).pushNamed(RouteGenerator.searchFondo);
+              // if (newFondo != null) {
+              //   addFondo(newFondo as Fondo);
+              // } else {
+              //   _showMsg(msg: 'Sin cambios en la cartera.');
+              // }
+            },
+          ),
+        ],
+      ),
     );
+  }
+
+  void updateValor() async {
+    //TODO: msg updating
+    print('UPDATING...');
+    final getDataApi = await apiService.getDataApi(widget.fondo.isin);
+    if (getDataApi != null) {
+      var newValor = Valor(date: getDataApi.epochSecs, precio: getDataApi.price);
+      var newMoneda = getDataApi.market;
+      var newLastPrecio = getDataApi.price;
+      var newLastDate = getDataApi.epochSecs;
+      setState(() {
+        widget.fondo.moneda = newMoneda;
+        //moneda = newMoneda;
+        widget.fondo.lastPrecio = newLastPrecio;
+        //lastPrecio = newLastPrecio;
+        widget.fondo.lastDate = newLastDate;
+        //lastDate = newLastDate;
+      });
+      _sqlite.insertDataApi(
+        widget.cartera,
+        widget.fondo,
+        moneda: newMoneda,
+        lastPrecio: newLastPrecio,
+        lastDate: newLastDate,
+      );
+      //TODO check newvalor repetido por date ??
+      //setState(() => lastValor = newValor);
+      _sqlite.insertVL(widget.cartera, widget.fondo, newValor);
+
+      _refreshValores();
+      // TODO: BANNER
+      //print(dataApi?.price);
+    } else {
+      print('ERROR GET DATAAPI');
+    }
   }
 
   void getRangeValores(BuildContext context) async {
@@ -467,47 +369,6 @@ class _PageFondoState extends State<PageFondo> {
         print('ERROR GET DATA API RANGE');
       }
     }
-  }
-
-  void updateValor() async {
-    //TODO: msg updating
-    final getDataApi = await apiService.getDataApi(widget.fondo.isin);
-    if (getDataApi != null) {
-      var newValor = Valor(date: getDataApi.epochSecs, precio: getDataApi.price);
-      var newMoneda = getDataApi.market;
-      var newLastPrecio = getDataApi.price;
-      var newLastDate = getDataApi.epochSecs;
-      setState(() {
-        widget.fondo.moneda = newMoneda;
-        //moneda = newMoneda;
-        widget.fondo.lastPrecio = newLastPrecio;
-        //lastPrecio = newLastPrecio;
-        widget.fondo.lastDate = newLastDate;
-        //lastDate = newLastDate;
-      });
-      _sqlite.insertDataApi(
-        widget.cartera,
-        widget.fondo,
-        moneda: newMoneda,
-        lastPrecio: newLastPrecio,
-        lastDate: newLastDate,
-      );
-      //TODO check newvalor repetido por date ??
-      //setState(() => lastValor = newValor);
-      _sqlite.insertVL(widget.cartera, widget.fondo, newValor);
-
-      _refreshValores();
-      // TODO: BANNER
-      //print(dataApi?.price);
-    } else {
-      print('ERROR GET DATAAPI');
-    }
-  }
-
-  String _epochFormat(int epoch) {
-    final DateTime date = DateTime.fromMillisecondsSinceEpoch(epoch * 1000);
-    final DateFormat formatter = DateFormat('dd/MM/yy');
-    return formatter.format(date);
   }
 
   void _deleteConfirm(BuildContext context) {
