@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/cartera.dart';
 import '../models/fondo.dart';
 import '../models/valor.dart';
-import '../routes.dart';
+//import '../routes.dart';
 import '../services/api_service.dart';
 import '../services/sqlite_service.dart';
 

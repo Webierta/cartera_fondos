@@ -10,10 +10,7 @@ import '../models/valor.dart';
 import '../routes.dart';
 import '../services/api_service.dart';
 import '../services/sqlite_service.dart';
-//import '../widgets/grafico.dart';
-//import '../widgets/fab_bottom_app_bar.dart';
 import '../widgets/grafico_chart.dart';
-//import '../widgets/grafico_fondo.dart';
 import '../widgets/main_fondo.dart';
 import '../widgets/tabla_fondo.dart';
 
@@ -85,7 +82,6 @@ class _PageFondoState extends State<PageFondo> {
         //refresh: refreshValores(),
       ));
       listaWidgets.add(TablaFondo(valores: valores));
-      //listaWidgets.add(GraficoFondo(valores: valores));
       listaWidgets.add(GraficoChart(valores: valores));
       loading = false;
       msgLoading = '';
@@ -99,76 +95,31 @@ class _PageFondoState extends State<PageFondo> {
     }*/
   }
 
-  PopupMenuItem _buildMenuRefresh(String title, IconData iconData, int position) {
-    return PopupMenuItem(
-      value: position,
-      child: Row(
-        children: [
-          Icon(iconData, color: Colors.white),
-          const SizedBox(width: 10),
-          Text(title),
-        ],
-      ),
-    );
-  }
-
-  PopupMenuItem _buildMenuItem(String title, IconData iconData, int position) {
-    return PopupMenuItem(
-      value: position,
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Icon(iconData, color: Colors.white),
-              const SizedBox(width: 10),
-              Text(title),
-            ],
-          ),
-          if (position == 0 || position == 2)
-            const Padding(
-              padding: EdgeInsets.only(top: 10),
-              child: PopupMenuDivider(height: 10),
-            ),
-        ],
-      ),
-    );
-  }
-
-  _onMenuRefresh(int value) {
+  /*_onMenuRefresh(int value) {
     if (value == ItemRefresh.update.index) {
       updateValor();
     } else if (value == ItemRefresh.getRange.index) {
       getRangeValores(context);
     } else {}
-  }
-
-  // TODO: ACCIONES MENU
-  _onMenuItemSelected(int value) {
-    if (value == ItemMenuFondo.editar.index) {
-      print('EDITAR');
-    } else if (value == ItemMenuFondo.suscribir.index) {
-      print('SUSCRIBIR');
-    } else if (value == ItemMenuFondo.reembolsar.index) {
-      print('REEMBOLSAR');
-    } else if (value == ItemMenuFondo.eliminar.index) {
-      _deleteConfirm(context);
-    } else if (value == ItemMenuFondo.exportar.index) {
-      print('EXPORTAR');
-    } else {}
-  }
-
-  void _onItemTapped(int index, [bool update = false]) async {
-    // SOLO SI SE HAN ACTUALIZADO LOS DATOS
-    //await _refreshValores();
-    setState(() => _selectedIndex = index);
-  }
-
-  void _selectedTab(int index) {
-    setState(() => _selectedIndex = index);
-  }
+  }*/
 
   @override
   Widget build(BuildContext context) {
+    const Map<String, IconData> itemMenu = {
+      'Editar': Icons.edit,
+      'Suscribir': Icons.login,
+      'Reembolsar': Icons.logout,
+      'Eliminar': Icons.delete_forever,
+      'Exportar': Icons.download,
+    };
+
+    List<ListTile> listaItemMenu = itemMenu.entries
+        .map((e) => ListTile(
+              leading: Icon(e.value, color: Colors.white),
+              title: Text(e.key, style: const TextStyle(color: Colors.white)),
+            ))
+        .toList();
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -185,42 +136,32 @@ class _PageFondoState extends State<PageFondo> {
         // TODO: variable segun TAB ??
         title: Text(widget.fondo.name),
         actions: [
-          /*IconButton(
-            icon: const Icon(Icons.update),
-            onPressed: () => updateValor(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.date_range),
-            onPressed: () => getRangeValores(context),
-          ),*/
-          /*PopupMenuButton(
-            icon: const Icon(Icons.refresh),
-            onSelected: (value) => _onMenuRefresh(value as int),
-            color: Colors.blue,
-            offset: Offset(0.0, AppBar().preferredSize.height),
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-            ),
-            itemBuilder: (ctx) => [
-              _buildMenuRefresh('Último valor', Icons.update, ItemRefresh.update.index),
-              _buildMenuRefresh('Intervalo de fechas', Icons.date_range, ItemRefresh.getRange.index)
-            ],
-          ),*/
           PopupMenuButton(
-            onSelected: (value) => _onMenuItemSelected(value as int),
             color: Colors.blue,
             offset: Offset(0.0, AppBar().preferredSize.height),
             shape: const RoundedRectangleBorder(
               borderRadius: BorderRadius.all(Radius.circular(8.0)),
             ),
-            itemBuilder: (ctx) => [
-              _buildMenuItem('Editar', Icons.edit, ItemMenuFondo.editar.index),
-              //TODO SUBPAGE de operar con suscribir y reembolsar
-              _buildMenuItem('Suscribir', Icons.login, ItemMenuFondo.suscribir.index),
-              _buildMenuItem('Reembolsar', Icons.logout, ItemMenuFondo.reembolsar.index),
-              _buildMenuItem('Eliminar datos', Icons.delete_forever, ItemMenuFondo.eliminar.index),
-              _buildMenuItem('Exportar', Icons.download, ItemMenuFondo.exportar.index),
-            ],
+            itemBuilder: (ctx) => listaItemMenu
+                .asMap()
+                .entries
+                .map((e) => PopupMenuItem(value: e.key, child: e.value))
+                .toList(),
+            onSelected: (value) {
+              //TODO: ACCIONES PENDIENTES
+              if (value == ItemMenuFondo.editar.index) {
+                print('EDITAR');
+                //TODO SUBPAGE de operar con suscribir y reembolsar
+              } else if (value == ItemMenuFondo.suscribir.index) {
+                print('SUSCRIBIR');
+              } else if (value == ItemMenuFondo.reembolsar.index) {
+                print('REEMBOLSAR');
+              } else if (value == ItemMenuFondo.eliminar.index) {
+                _deleteConfirm(context);
+              } else if (value == ItemMenuFondo.exportar.index) {
+                print('EXPORTAR');
+              } else {}
+            },
           ),
         ],
       ),
@@ -236,33 +177,6 @@ class _PageFondoState extends State<PageFondo> {
               ),
             )
           : listaWidgets.elementAt(_selectedIndex),
-      /*bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.assessment),
-            label: 'Fondo',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.table_rows_outlined), //table_rows_outlined list_alt
-            label: 'Tabla',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.timeline),
-            label: 'Gráfico',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.blue,
-        onTap: _onItemTapped,
-      ),*/
-      /*bottomNavigationBar: FABBottomAppBar(
-        onTabSelected: _selectedTab,
-        items: [
-          FABBottomAppBarItem(iconData: Icons.assessment, text: 'Fondo'),
-          FABBottomAppBarItem(iconData: Icons.table_rows_outlined, text: 'Tabla'),
-          FABBottomAppBarItem(iconData: Icons.timeline, text: 'Gráfico'),
-        ],
-      ),*/
       bottomNavigationBar: BottomAppBar(
         color: Colors.blue,
         shape: const CircularNotchedRectangle(),
@@ -270,48 +184,21 @@ class _PageFondoState extends State<PageFondo> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.start,
-          //children: _buildItemsBottomAppBar(),
-          children: [
-            IconButton(
-              icon: Icon(
-                Icons.assessment,
-                size: 32,
-                color: _selectedIndex == 0 ? Colors.white : Colors.white54,
-              ),
-              padding: const EdgeInsets.only(left: 32.0),
-              onPressed: () {
-                setState(() => _selectedIndex = 0);
-              },
-            ),
-            IconButton(
-              icon: Icon(
-                Icons.table_rows_outlined,
-                size: 32,
-                color: _selectedIndex == 1 ? Colors.white : Colors.white54,
-              ),
-              padding: const EdgeInsets.only(left: 32.0),
-              onPressed: () {
-                setState(() => _selectedIndex = 1);
-              },
-            ),
-            IconButton(
-              icon: Icon(
-                Icons.timeline,
-                size: 32,
-                color: _selectedIndex == 2 ? Colors.white : Colors.white54,
-              ),
-              padding: const EdgeInsets.only(left: 32.0),
-              onPressed: () {
-                setState(() => _selectedIndex = 2);
-              },
-            ),
-          ],
+          children: [Icons.assessment, Icons.table_rows_outlined, Icons.timeline]
+              .asMap()
+              .entries
+              .map((item) => IconButton(
+                    icon: Icon(
+                      item.value,
+                      color: _selectedIndex == item.key ? Colors.white : Colors.white38,
+                    ),
+                    padding: const EdgeInsets.only(left: 32.0),
+                    iconSize: 32,
+                    onPressed: () => setState(() => _selectedIndex = item.key),
+                  ))
+              .toList(),
         ),
       ),
-      /*floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.event_repeat),
-        onPressed: getRangeValores,
-      ),*/
       floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
       floatingActionButton: SpeedDial(
         animatedIcon: AnimatedIcons.menu_close,
@@ -319,8 +206,7 @@ class _PageFondoState extends State<PageFondo> {
         spacing: 8,
         spaceBetweenChildren: 4,
         overlayColor: Colors.blue,
-        overlayOpacity: 0.2, //floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
-
+        overlayOpacity: 0.2,
         children: [
           SpeedDialChild(
             child: const Icon(Icons.date_range), //dns // list  //
