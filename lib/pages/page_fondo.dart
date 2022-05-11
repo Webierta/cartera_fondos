@@ -11,7 +11,9 @@ import '../routes.dart';
 import '../services/api_service.dart';
 import '../services/sqlite_service.dart';
 //import '../widgets/grafico.dart';
-import '../widgets/grafico_fondo.dart';
+//import '../widgets/fab_bottom_app_bar.dart';
+import '../widgets/grafico_chart.dart';
+//import '../widgets/grafico_fondo.dart';
 import '../widgets/main_fondo.dart';
 import '../widgets/tabla_fondo.dart';
 
@@ -83,7 +85,8 @@ class _PageFondoState extends State<PageFondo> {
         //refresh: refreshValores(),
       ));
       listaWidgets.add(TablaFondo(valores: valores));
-      listaWidgets.add(GraficoFondo(valores: valores));
+      //listaWidgets.add(GraficoFondo(valores: valores));
+      listaWidgets.add(GraficoChart(valores: valores));
       loading = false;
       msgLoading = '';
     });
@@ -160,6 +163,10 @@ class _PageFondoState extends State<PageFondo> {
     setState(() => _selectedIndex = index);
   }
 
+  void _selectedTab(int index) {
+    setState(() => _selectedIndex = index);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -229,7 +236,7 @@ class _PageFondoState extends State<PageFondo> {
               ),
             )
           : listaWidgets.elementAt(_selectedIndex),
-      bottomNavigationBar: BottomNavigationBar(
+      /*bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.assessment),
@@ -247,18 +254,73 @@ class _PageFondoState extends State<PageFondo> {
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.blue,
         onTap: _onItemTapped,
+      ),*/
+      /*bottomNavigationBar: FABBottomAppBar(
+        onTabSelected: _selectedTab,
+        items: [
+          FABBottomAppBarItem(iconData: Icons.assessment, text: 'Fondo'),
+          FABBottomAppBarItem(iconData: Icons.table_rows_outlined, text: 'Tabla'),
+          FABBottomAppBarItem(iconData: Icons.timeline, text: 'Gráfico'),
+        ],
+      ),*/
+      bottomNavigationBar: BottomAppBar(
+        color: Colors.blue,
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 5,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.start,
+          //children: _buildItemsBottomAppBar(),
+          children: [
+            IconButton(
+              icon: Icon(
+                Icons.assessment,
+                size: 32,
+                color: _selectedIndex == 0 ? Colors.white : Colors.white54,
+              ),
+              padding: const EdgeInsets.only(left: 32.0),
+              onPressed: () {
+                setState(() => _selectedIndex = 0);
+              },
+            ),
+            IconButton(
+              icon: Icon(
+                Icons.table_rows_outlined,
+                size: 32,
+                color: _selectedIndex == 1 ? Colors.white : Colors.white54,
+              ),
+              padding: const EdgeInsets.only(left: 32.0),
+              onPressed: () {
+                setState(() => _selectedIndex = 1);
+              },
+            ),
+            IconButton(
+              icon: Icon(
+                Icons.timeline,
+                size: 32,
+                color: _selectedIndex == 2 ? Colors.white : Colors.white54,
+              ),
+              padding: const EdgeInsets.only(left: 32.0),
+              onPressed: () {
+                setState(() => _selectedIndex = 2);
+              },
+            ),
+          ],
+        ),
       ),
       /*floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.event_repeat),
         onPressed: getRangeValores,
       ),*/
+      floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
       floatingActionButton: SpeedDial(
         animatedIcon: AnimatedIcons.menu_close,
         icon: Icons.refresh,
         spacing: 8,
         spaceBetweenChildren: 4,
         overlayColor: Colors.blue,
-        overlayOpacity: 0.2,
+        overlayOpacity: 0.2, //floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
+
         children: [
           SpeedDialChild(
             child: const Icon(Icons.date_range), //dns // list  //
@@ -453,3 +515,199 @@ class _PageFondoState extends State<PageFondo> {
               },
             ),
           ),*/
+
+/*class FABBottomAppBarItem {
+  IconData iconData;
+  String text;
+  FABBottomAppBarItem({required this.iconData, required this.text});
+}
+
+class FABBottomAppBar extends StatefulWidget {
+  final List<FABBottomAppBarItem> items;
+  final ValueChanged<int> onTabSelected;
+
+  const FABBottomAppBar({Key? key, required this.items, required this.onTabSelected})
+      : super(key: key);
+
+  @override
+  State<StatefulWidget> createState() => FABBottomAppBarState();
+}
+
+class FABBottomAppBarState extends State<FABBottomAppBar> {
+  int _selectedIndex = 0;
+
+  _updateIndex(int index) {
+    widget.onTabSelected(index);
+    setState(() => _selectedIndex = index);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    List<Widget> items = List.generate(widget.items.length, (int index) {
+      return _buildTabItem(
+        item: widget.items[index],
+        index: index,
+        onPressed: _updateIndex,
+      );
+    });
+
+    return BottomAppBar(
+      shape: const CircularNotchedRectangle(),
+      notchMargin: 5,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: items,
+      ),
+    );
+  }
+
+  Widget _buildTabItem({
+    required FABBottomAppBarItem item,
+    required int index,
+    required ValueChanged<int> onPressed,
+  }) {
+    Color color = _selectedIndex == index ? Colors.blue : Colors.grey;
+    return Padding(
+      padding: const EdgeInsets.only(left: 28),
+      child: SizedBox(
+        height: 50,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: () => onPressed(index),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Icon(item.iconData, color: color),
+                Text(item.text, style: TextStyle(color: color)),
+                //padding: const EdgeInsets.only(left: 28.0),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}*/
+
+/*
+class FABBottomAppBarItem {
+  IconData iconData;
+  String text;
+  FABBottomAppBarItem({required this.iconData, required this.text});
+}
+
+class FABBottomAppBar extends StatefulWidget {
+  final List<FABBottomAppBarItem> items;
+  // final String centerItemText;
+  // final double height;
+  // final double iconSize;
+  // final Color backgroundColor;
+  // final Color color;
+  // final Color selectedColor;
+  // final NotchedShape notchedShape;
+  final ValueChanged<int> onTabSelected;
+
+  FABBottomAppBar({
+    Key? key,
+    required this.items,
+    // required this.centerItemText,
+    // this.height = 60.0,
+    // this.iconSize = 24.0,
+    // required this.backgroundColor,
+    // required this.color,
+    // required this.selectedColor,
+    // required this.notchedShape,
+    required this.onTabSelected,
+  }) : super(key: key) {
+    assert(items.length == 2 || items.length == 4);
+  }
+
+  @override
+  State<StatefulWidget> createState() => FABBottomAppBarState();
+}
+
+class FABBottomAppBarState extends State<FABBottomAppBar> {
+  int _selectedIndex = 0;
+
+  _updateIndex(int index) {
+    widget.onTabSelected(index);
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    List<Widget> items = List.generate(widget.items.length, (int index) {
+      return _buildTabItem(
+        item: widget.items[index],
+        index: index,
+        onPressed: _updateIndex,
+      );
+    });
+    items.insert(items.length >> 1, _buildMiddleTabItem());
+
+    return BottomAppBar(
+      shape: const CircularNotchedRectangle(), //widget.notchedShape,
+      child: Row(
+        mainAxisSize: MainAxisSize.max,
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: items,
+      ),
+      color: Colors.blue, //widget.backgroundColor,
+    );
+  }
+
+  Widget _buildMiddleTabItem() {
+    return Expanded(
+      child: SizedBox(
+        height: widget.height,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: <Widget>[
+            SizedBox(height: widget.iconSize),
+            Text(
+              widget.centerItemText ?? '',
+              style: const TextStyle(color: Colors.blue), //widget.color),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabItem({
+    required FABBottomAppBarItem item,
+    required int index,
+    required ValueChanged<int> onPressed,
+  }) {
+    Color color = _selectedIndex == index ? widget.selectedColor : widget.color;
+    return Expanded(
+      child: SizedBox(
+        height: widget.height,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: () => onPressed(index),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Icon(item.iconData, color: color, size: widget.iconSize),
+                Text(
+                  item.text,
+                  style: TextStyle(color: color),
+                )
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+*/
