@@ -13,17 +13,27 @@ class GraficoChart extends StatefulWidget {
 }
 
 class _GraficoChartState extends State<GraficoChart> {
+  String _epochFormat(int epoch) {
+    final DateTime date = DateTime.fromMillisecondsSinceEpoch(epoch * 1000);
+    final DateFormat formatter = DateFormat('dd/MM/yy');
+    return formatter.format(date);
+  }
+
   @override
   Widget build(BuildContext context) {
-    List<double> precios = widget.valores.reversed.map((entry) => entry.precio).toList();
-    List<int> fechas = widget.valores.reversed.map((entry) => entry.date).toList();
+    final List<double> precios = widget.valores.reversed.map((entry) => entry.precio).toList();
+    final List<int> fechas = widget.valores.reversed.map((entry) => entry.date).toList();
     double precioMedio = 0;
     double precioMax = 0;
     double precioMin = 0;
+    String? fechaMax;
+    String? fechaMin;
     if (precios.length > 1) {
       precioMedio = precios.reduce((a, b) => a + b) / precios.length;
       precioMax = precios.reduce((curr, next) => curr > next ? curr : next);
       precioMin = precios.reduce((curr, next) => curr < next ? curr : next);
+      fechaMax = _epochFormat(fechas[precios.indexOf(precioMax)]);
+      fechaMin = _epochFormat(fechas[precios.indexOf(precioMin)]);
     }
     /*int fechaMax = 0;
     int fechaMin = 0;
@@ -53,10 +63,7 @@ class _GraficoChartState extends State<GraficoChart> {
           barWidth: 2,
           isCurved: false,
           dotData: FlDotData(show: true),
-          belowBarData: BarAreaData(
-            show: true,
-            color: Colors.blue.withOpacity(0.5),
-          ),
+          belowBarData: BarAreaData(show: true, color: Colors.blue.withOpacity(0.5)),
         ),
       ],
       minY: precioMin.floor().toDouble(),
@@ -74,7 +81,7 @@ class _GraficoChartState extends State<GraficoChart> {
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
               );
-              return LineTooltipItem('$fecha: ${touchedSpot.y.toStringAsFixed(2)}', textStyle);
+              return LineTooltipItem('${touchedSpot.y.toStringAsFixed(2)}\n$fecha', textStyle);
             }).toList();
           },
         ),
@@ -93,12 +100,8 @@ class _GraficoChartState extends State<GraficoChart> {
       gridData: FlGridData(show: true),
       titlesData: FlTitlesData(
         show: true,
-        rightTitles: AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
-        ),
-        topTitles: AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
-        ),
+        rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
         leftTitles: AxisTitles(
           sideTitles: SideTitles(
               showTitles: true,
@@ -107,10 +110,7 @@ class _GraficoChartState extends State<GraficoChart> {
                 // if (value.toInt() % 10 != 0) {
                 //   return const Text('');
                 // }
-                return Text(
-                  value.toStringAsFixed(2),
-                  style: const TextStyle(fontSize: 8),
-                );
+                return Text(value.toStringAsFixed(2), style: const TextStyle(fontSize: 8));
               }),
         ),
         bottomTitles: AxisTitles(
@@ -144,8 +144,9 @@ class _GraficoChartState extends State<GraficoChart> {
             dashArray: [2, 2],
             label: HorizontalLineLabel(
               show: true,
+              style: const TextStyle(backgroundColor: Colors.black),
               alignment: Alignment.topRight,
-              labelResolver: (line) => 'Media: ${precioMedio.toStringAsFixed(2)}',
+              labelResolver: (line) => ' Media: ${precioMedio.toStringAsFixed(2)} ',
             ),
           ),
           HorizontalLine(
@@ -155,8 +156,9 @@ class _GraficoChartState extends State<GraficoChart> {
             dashArray: [2, 2],
             label: HorizontalLineLabel(
               show: true,
+              style: const TextStyle(backgroundColor: Colors.black),
               alignment: Alignment.topRight,
-              labelResolver: (line) => 'Máximo: ${precioMax.toStringAsFixed(2)}',
+              labelResolver: (line) => ' Máx: ${precioMax.toStringAsFixed(2)} - ${fechaMax ?? ''} ',
             ),
           ),
           HorizontalLine(
@@ -166,8 +168,10 @@ class _GraficoChartState extends State<GraficoChart> {
             dashArray: [2, 2],
             label: HorizontalLineLabel(
               show: true,
+              //padding: const EdgeInsets.all(14),
+              style: const TextStyle(backgroundColor: Colors.black),
               alignment: Alignment.topRight,
-              labelResolver: (line) => 'Mínimo: ${precioMin.toStringAsFixed(2)}',
+              labelResolver: (line) => ' Mín: ${precioMin.toStringAsFixed(2)} - ${fechaMin ?? ''} ',
             ),
           ),
         ],

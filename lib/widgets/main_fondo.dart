@@ -6,7 +6,8 @@ import '../models/fondo.dart';
 import '../models/valor.dart';
 //import '../routes.dart';
 import '../services/api_service.dart';
-import '../services/sqlite_service.dart';
+import '../services/sqlite.dart';
+//import '../services/sqlite_service.dart';
 
 class MainFondo extends StatefulWidget {
   final Cartera cartera;
@@ -19,10 +20,12 @@ class MainFondo extends StatefulWidget {
 }
 
 class _MainFondoState extends State<MainFondo> {
-  late SqliteService _sqlite;
+  late Sqlite _db;
+  //late SqliteService _sqlite;
   late ApiService apiService;
 
   var valores = <Valor>[];
+  var valoresByOrder = <Valor>[];
   var valoresCopy = <Valor>[];
 
   bool loading = true;
@@ -30,17 +33,42 @@ class _MainFondoState extends State<MainFondo> {
 
   @override
   void initState() {
-    _sqlite = SqliteService();
+    //_sqlite = SqliteService();
     loading = true;
     msgLoading = 'Abriendo base de datos...';
-    _sqlite.initDB().whenComplete(() async {
+    /*_sqlite.initDB().whenComplete(() async {
       await _refreshValores();
+    });*/
+    _db = Sqlite();
+    _db.openDb().whenComplete(() async {
+      await _updateValores();
     });
     apiService = ApiService();
     super.initState();
   }
 
-  _refreshValores() async {
+  _updateValores() async {
+    setState(() {
+      valores = <Valor>[];
+      valoresByOrder = <Valor>[];
+      valoresCopy = <Valor>[];
+    });
+
+    await _db.createTableFondo(widget.cartera, widget.fondo);
+    setState(() => msgLoading = 'Obteniendo datos...');
+    await _db.getValoresByOrder(widget.cartera, widget.fondo).whenComplete(() => setState(() {
+          loading = false;
+          msgLoading = '';
+          valores = _db.dbValoresByOrder; // ???
+          valoresByOrder = _db.dbValoresByOrder;
+          valoresCopy = [...valores];
+        }));
+    //TODO: si moneda, lastPrecio y LastDate == null hacer un update
+    if (widget.fondo.moneda == null) {}
+    //TODO: ordenar primero por date para obtener valores.last si valores.isNotEmpty ??
+  }
+
+  /*_refreshValores() async {
     setState(() {
       valores = <Valor>[];
       valoresCopy = <Valor>[];
@@ -64,13 +92,13 @@ class _MainFondoState extends State<MainFondo> {
     });
 
     //widget.refresh;
-    /*if (valores.isNotEmpty) {
+    */ /*if (valores.isNotEmpty) {
       //TODO: ordenar primero por date
       setState(() {
         lastValor = valores.last;
       });
-    }*/
-  }
+    }*/ /*
+  }*/
 
   @override
   Widget build(BuildContext context) {

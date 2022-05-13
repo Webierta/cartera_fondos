@@ -9,7 +9,8 @@ import '../models/fondo.dart';
 import '../models/valor.dart';
 import '../routes.dart';
 import '../services/api_service.dart';
-import '../services/sqlite_service.dart';
+import '../services/sqlite.dart';
+//import '../services/sqlite_service.dart';
 import '../widgets/grafico_chart.dart';
 import '../widgets/main_fondo.dart';
 import '../widgets/tabla_fondo.dart';
@@ -29,10 +30,12 @@ class PageFondo extends StatefulWidget {
 class _PageFondoState extends State<PageFondo> {
   int _selectedIndex = 0;
 
-  late SqliteService _sqlite;
+  late Sqlite _db;
+  //late SqliteService _sqlite;
   late ApiService apiService;
 
   var valores = <Valor>[];
+  var valoresByOrder = <Valor>[];
   var valoresCopy = <Valor>[];
 
   bool loading = true;
@@ -43,17 +46,49 @@ class _PageFondoState extends State<PageFondo> {
 
   @override
   void initState() {
-    _sqlite = SqliteService();
+    //_sqlite = SqliteService();
     loading = true;
     msgLoading = 'Abriendo base de datos...';
-    _sqlite.initDB().whenComplete(() async {
+    /*_sqlite.initDB().whenComplete(() async {
       await _refreshValores();
+    });*/
+    _db = Sqlite();
+    _db.openDb().whenComplete(() async {
+      await _updateValores();
     });
     apiService = ApiService();
     super.initState();
   }
 
-  _refreshValores() async {
+  _updateValores() async {
+    setState(() {
+      loading = true;
+      valores = <Valor>[];
+      valoresByOrder = <Valor>[];
+      valoresCopy = <Valor>[];
+    });
+
+    await _db.createTableFondo(widget.cartera, widget.fondo);
+    setState(() => msgLoading = 'Obteniendo datos...');
+    await _db.getValoresByOrder(widget.cartera, widget.fondo).whenComplete(() => setState(() {
+          loading = false;
+          msgLoading = '';
+          valores = _db.dbValoresByOrder; // ???
+          valoresByOrder = _db.dbValoresByOrder;
+          valoresCopy = [...valores];
+          listaWidgets.clear();
+          listaWidgets.add(MainFondo(cartera: widget.cartera, fondo: widget.fondo));
+          //refresh: refreshValores(),
+          listaWidgets.add(TablaFondo(valores: valores));
+          listaWidgets.add(GraficoChart(valores: valores));
+        }));
+    //TODO: si moneda, lastPrecio y LastDate == null hacer un update
+    if (widget.fondo.moneda == null) {}
+    //TODO: check si data no es null ??
+    //TODO: ordenar primero por date ??
+  }
+
+  /*_refreshValores() async {
     setState(() {
       loading = true;
       valores = <Valor>[];
@@ -87,13 +122,13 @@ class _PageFondoState extends State<PageFondo> {
       msgLoading = '';
     });
 
-    /*if (valores.isNotEmpty) {
+    */ /*if (valores.isNotEmpty) {
       //TODO: ordenar primero por date
       setState(() {
         lastValor = valores.last;
       });
-    }*/
-  }
+    }*/ /*
+  }*/
 
   /*_onMenuRefresh(int value) {
     if (value == ItemRefresh.update.index) {
@@ -103,7 +138,7 @@ class _PageFondoState extends State<PageFondo> {
     } else {}
   }*/
 
-  Map<String, IconData> mapItemMenu = {
+  final Map<String, IconData> mapItemMenu = {
     Menu.editar.name: Icons.edit,
     Menu.suscribir.name: Icons.login,
     Menu.reembolsar.name: Icons.logout,
@@ -111,23 +146,10 @@ class _PageFondoState extends State<PageFondo> {
     Menu.exportar.name: Icons.download,
   };
 
+  final List<IconData> iconsButton = [Icons.assessment, Icons.table_rows_outlined, Icons.timeline];
+
   @override
   Widget build(BuildContext context) {
-    /* List<Column> listItemMenu = mapItemMenu.entries
-        .map((e) => Column(
-              children: [
-                ListTile(
-                  leading: Icon(e.value, color: Colors.white),
-                  title: Text(
-                    '${e.key[0].toUpperCase()}${e.key.substring(1)}',
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ),
-                if (e.key == Menu.editar.name || e.key == Menu.reembolsar.name)
-                  const PopupMenuDivider(height: 10),
-              ],
-            ))
-        .toList();*/
     List<Column> listItemMenu = [
       for (var item in mapItemMenu.entries)
         Column(children: [
@@ -148,7 +170,7 @@ class _PageFondoState extends State<PageFondo> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () async {
-            await _refreshValores();
+            //await _updateValores();  //TODO: ACTUALIZA AL VOLVER ????
             ScaffoldMessenger.of(context).removeCurrentSnackBar();
             Navigator.of(context).pushNamed(
               RouteGenerator.carteraPage,
@@ -165,11 +187,6 @@ class _PageFondoState extends State<PageFondo> {
             shape: const RoundedRectangleBorder(
               borderRadius: BorderRadius.all(Radius.circular(8.0)),
             ),
-            /*itemBuilder: (ctx) => listItemMenu
-                .asMap()
-                .entries
-                .map((e) => PopupMenuItem(value: Menu.values[e.key], child: e.value))
-                .toList(),*/
             itemBuilder: (ctx) => [
               for (var item in listItemMenu)
                 PopupMenuItem(value: Menu.values[listItemMenu.indexOf(item)], child: item)
@@ -211,19 +228,18 @@ class _PageFondoState extends State<PageFondo> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.start,
-          children: [Icons.assessment, Icons.table_rows_outlined, Icons.timeline]
-              .asMap()
-              .entries
-              .map((item) => IconButton(
-                    icon: Icon(
-                      item.value,
-                      color: _selectedIndex == item.key ? Colors.white : Colors.white38,
-                    ),
-                    padding: const EdgeInsets.only(left: 32.0),
-                    iconSize: 32,
-                    onPressed: () => setState(() => _selectedIndex = item.key),
-                  ))
-              .toList(),
+          children: [
+            for (var icon in iconsButton)
+              IconButton(
+                icon: Icon(icon,
+                    color: _selectedIndex == iconsButton.indexOf(icon)
+                        ? Colors.white
+                        : Colors.white38),
+                padding: const EdgeInsets.only(left: 32.0),
+                iconSize: 32,
+                onPressed: () => setState(() => _selectedIndex = iconsButton.indexOf(icon)),
+              )
+          ],
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
@@ -289,7 +305,7 @@ class _PageFondoState extends State<PageFondo> {
         widget.fondo.lastDate = newLastDate;
         //lastDate = newLastDate;
       });
-      _sqlite.insertDataApi(
+      /*_sqlite.insertDataApi(
         widget.cartera,
         widget.fondo,
         moneda: newMoneda,
@@ -299,8 +315,13 @@ class _PageFondoState extends State<PageFondo> {
       //TODO check newvalor repetido por date ??
       //setState(() => lastValor = newValor);
       _sqlite.insertVL(widget.cartera, widget.fondo, newValor);
+      _refreshValores();*/
 
-      _refreshValores();
+      _db.insertDataApi(widget.cartera, widget.fondo,
+          moneda: newMoneda, lastPrecio: newLastPrecio, lastDate: newLastDate);
+      //TODO check newvalor repetido por date ??
+      _db.insertVL(widget.cartera, widget.fondo, newValor);
+      _updateValores();
       // TODO: BANNER
       //print(dataApi?.price);
     } else {
@@ -331,10 +352,15 @@ class _PageFondoState extends State<PageFondo> {
         for (var dataApi in getDateApiRange) {
           newListValores.add(Valor(date: dataApi.epochSecs, precio: dataApi.price));
         }
-        await _sqlite
+        /*await _sqlite
             .insertListVL(widget.cartera, widget.fondo, newListValores)
             .whenComplete(() => setState(() => msgLoading = 'Escribiendo datos...'));
-        await _refreshValores();
+        await _refreshValores();*/
+        await _db
+            .insertListVL(widget.cartera, widget.fondo, newListValores)
+            .whenComplete(() => setState(() => msgLoading = 'Escribiendo datos...'));
+        await _updateValores();
+
         setState(() {
           loading = false;
           msgLoading = '';
@@ -369,8 +395,10 @@ class _PageFondoState extends State<PageFondo> {
                     //textStyle: const TextStyle(color: Colors.white),
                   ),
                   onPressed: () async {
-                    await _sqlite.deleteAllValoresInFondo(widget.cartera, widget.fondo);
-                    await _refreshValores();
+                    //await _sqlite.deleteAllValoresInFondo(widget.cartera, widget.fondo);
+                    //await _refreshValores();
+                    await _db.deleteAllValoresInFondo(widget.cartera, widget.fondo);
+                    await _updateValores();
                     Navigator.of(context).pop();
                   },
                 ),

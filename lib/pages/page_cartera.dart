@@ -9,7 +9,7 @@ import '../services/api_service.dart';
 import '../services/sqlite.dart';
 //import '../services/sqlite_service.dart';
 
-enum MenuCartera { eliminar }
+enum MenuCartera { ordenar, eliminar }
 
 class PageCartera extends StatefulWidget {
   final Cartera cartera;
@@ -88,7 +88,8 @@ class _PageCarteraState extends State<PageCartera> {
     return null;
   }
 
-  Map<String, IconData> mapItemMenu = {
+  final Map<String, IconData> mapItemMenu = {
+    MenuCartera.ordenar.name: Icons.sort_by_alpha,
     MenuCartera.eliminar.name: Icons.delete_forever,
   };
 
@@ -124,8 +125,7 @@ class _PageCarteraState extends State<PageCartera> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () async {
-            //_refreshFondos();
-            await _updateFondos();
+            //await _updateFondos(); // TODO: ELIMINADO Y ACTUALIZA AL VOLVER ??
             ScaffoldMessenger.of(context).removeCurrentSnackBar();
             Navigator.of(context).pushNamed(RouteGenerator.homePage);
           },
@@ -135,7 +135,7 @@ class _PageCarteraState extends State<PageCartera> {
           IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: () async {
-                refreshAll();
+                await refreshAll();
                 //await _updateFondos();
               }),
           PopupMenuButton(
@@ -157,7 +157,16 @@ class _PageCarteraState extends State<PageCartera> {
                       )
                   ],
               onSelected: (MenuCartera item) async {
-                if (item == MenuCartera.eliminar) {
+                if (item == MenuCartera.ordenar) {
+                  var fondosSort = <Fondo>[];
+                  fondosSort = [...fondos];
+                  fondosSort.sort((a, b) => a.name.compareTo(b.name));
+                  _db.deleteAllFondosInCartera(widget.cartera);
+                  for (var fondo in fondosSort) {
+                    _db.insertFondo(widget.cartera, fondo);
+                  }
+                  _updateFondos();
+                } else if (item == MenuCartera.eliminar) {
                   _deleteAllConfirm(context);
                 }
               }),
@@ -332,6 +341,7 @@ class _PageCarteraState extends State<PageCartera> {
   }
 
   refreshAll() async {
+    var mapResultados = <String, Icon>{};
     setState(() {
       _isUpdating = true;
       _msgUpdating = 'Iniciando descarga...';
@@ -357,6 +367,7 @@ class _PageCarteraState extends State<PageCartera> {
           await _db.insertDataApi(widget.cartera, fondo,
               moneda: newMoneda, lastPrecio: newLastPrecio, lastDate: newLastDate);
           await _db.insertVL(widget.cartera, fondo, newValor);
+          mapResultados[fondo.name] = const Icon(Icons.check_box, color: Colors.green);
           //await _updateFondos();
         } else {
           //_showMsg(msg: 'Error al actualizar el fondo ${fondo.name}');
@@ -364,6 +375,7 @@ class _PageCarteraState extends State<PageCartera> {
             //_isUpdating = false;
             _msgUpdating = 'Error al actualizar el fondo ${fondo.name}';
           });
+          mapResultados[fondo.name] = const Icon(Icons.disabled_by_default, color: Colors.red);
         }
       }
       await _updateFondos();
@@ -371,8 +383,55 @@ class _PageCarteraState extends State<PageCartera> {
         _isUpdating = false;
         _msgUpdating = '';
       });
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            insetPadding: const EdgeInsets.all(10),
+            title: const Text('Resultado'),
+            actions: [
+              TextButton(
+                child: const Text('Cerrar'),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+            content: SingleChildScrollView(
+              child: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (var res in mapResultados.entries)
+                      ListTile(dense: true, title: Text(res.key), trailing: res.value),
+                  ],
+                  /*children: [
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const ClampingScrollPhysics(),
+                      itemCount: mapResultados.length,
+                      itemBuilder: (BuildContext context, int idx) {
+                        return ListTile(
+                          dense: true,
+                          title: Text(mapResultados.keys.toList()[idx]),
+                          trailing: Icon(
+                            mapResultados.values.toList()[idx],
+                            color: mapResultados.values.toList()[idx] == Icons.check_box
+                                ? Colors.green
+                                : Colors.red,
+                          ),
+                        );
+                      },
+                    ),
+                  ],*/
+                ),
+              ),
+            ),
+          );
+        },
+      );
     } else {
       _showMsg(msg: 'Nada que actualizar');
+      //Navigator.of(context).restorablePush(_dialogBuilder);
       setState(() {
         _isUpdating = false;
         _msgUpdating = '';

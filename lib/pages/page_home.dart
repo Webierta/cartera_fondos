@@ -86,7 +86,7 @@ class _PageHomeState extends State<PageHome> {
     super.dispose();
   }
 
-  Map<String, IconData> mapItemMenu = {
+  final Map<String, IconData> mapItemMenu = {
     Menu.ordenar.name: Icons.sort_by_alpha,
     Menu.exportar.name: Icons.save,
     Menu.eliminar.name: Icons.delete_forever,
