@@ -303,6 +303,7 @@ class _PageFondoState extends State<PageFondo> {
         widget.fondo.lastPrecio = newLastPrecio;
         //lastPrecio = newLastPrecio;
         widget.fondo.lastDate = newLastDate;
+        widget.fondo.dif = widget.fondo.getDif();
         //lastDate = newLastDate;
       });
       /*_sqlite.insertDataApi(

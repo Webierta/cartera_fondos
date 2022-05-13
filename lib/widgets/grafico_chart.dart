@@ -61,7 +61,7 @@ class _GraficoChartState extends State<GraficoChart> {
           spots: spots,
           color: Colors.blue,
           barWidth: 2,
-          isCurved: false,
+          isCurved: true,
           dotData: FlDotData(show: true),
           belowBarData: BarAreaData(show: true, color: Colors.blue.withOpacity(0.5)),
         ),
@@ -144,9 +144,15 @@ class _GraficoChartState extends State<GraficoChart> {
             dashArray: [2, 2],
             label: HorizontalLineLabel(
               show: true,
-              style: const TextStyle(backgroundColor: Colors.black),
+              style: TextStyle(
+                //backgroundColor: Colors.black,
+                background: Paint()
+                  ..color = Colors.black
+                  ..strokeWidth = 13
+                  ..style = PaintingStyle.stroke,
+              ),
               alignment: Alignment.topRight,
-              labelResolver: (line) => ' Media: ${precioMedio.toStringAsFixed(2)} ',
+              labelResolver: (line) => 'Media: ${precioMedio.toStringAsFixed(2)}',
             ),
           ),
           HorizontalLine(
@@ -156,9 +162,14 @@ class _GraficoChartState extends State<GraficoChart> {
             dashArray: [2, 2],
             label: HorizontalLineLabel(
               show: true,
-              style: const TextStyle(backgroundColor: Colors.black),
+              style: TextStyle(
+                background: Paint()
+                  ..color = Colors.black
+                  ..strokeWidth = 13
+                  ..style = PaintingStyle.stroke,
+              ),
               alignment: Alignment.topRight,
-              labelResolver: (line) => ' Máx: ${precioMax.toStringAsFixed(2)} - ${fechaMax ?? ''} ',
+              labelResolver: (line) => 'Máx: ${precioMax.toStringAsFixed(2)} - ${fechaMax ?? ''}',
             ),
           ),
           HorizontalLine(
@@ -169,9 +180,14 @@ class _GraficoChartState extends State<GraficoChart> {
             label: HorizontalLineLabel(
               show: true,
               //padding: const EdgeInsets.all(14),
-              style: const TextStyle(backgroundColor: Colors.black),
+              style: TextStyle(
+                background: Paint()
+                  ..color = Colors.black
+                  ..strokeWidth = 13
+                  ..style = PaintingStyle.stroke,
+              ),
               alignment: Alignment.topRight,
-              labelResolver: (line) => ' Mín: ${precioMin.toStringAsFixed(2)} - ${fechaMin ?? ''} ',
+              labelResolver: (line) => 'Mín: ${precioMin.toStringAsFixed(2)} - ${fechaMin ?? ''}',
             ),
           ),
         ],

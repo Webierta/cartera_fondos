@@ -15,7 +15,7 @@ class TablaFondo extends StatefulWidget {
 class _TablaFondoState extends State<TablaFondo> {
   var valoresCopy = <Valor>[];
   int _currentSortColumn = 0;
-  bool _isSortAsc = true;
+  bool _isSortDesc = true;
 
   @override
   void initState() {
@@ -29,7 +29,138 @@ class _TablaFondoState extends State<TablaFondo> {
     return formatter.format(date);
   }
 
+  _changeSort() {
+    setState(() {
+      if (!_isSortDesc) {
+        valoresCopy.sort((a, b) => b.date.compareTo(a.date));
+      } else {
+        valoresCopy.sort((a, b) => a.date.compareTo(b.date));
+      }
+      _isSortDesc = !_isSortDesc;
+    });
+  }
+
+  /*DataCell(valoresCopy.length > (valoresCopy.indexOf(valor) + 1)
+    ? Text(
+      (valor.precio - valoresCopy[valoresCopy.indexOf(valor) + 1].precio.toStringAsFixed(2),
+      style: TextStyle(
+        color: valor.precio -
+        valoresCopy[valoresCopy.indexOf(valor) + 1].precio < 0
+          ? Colors.red
+          : Colors.green,
+      ),
+      )
+    : const Text(''))*/
+
+  Text _diferencia(Valor valor) {
+    //TODO: depende si está ordenada ASC (+1) o DESC (-1)
+    if (_isSortDesc) {
+      if (valoresCopy.length > (valoresCopy.indexOf(valor) + 1)) {
+        var dif = valor.precio - valoresCopy[valoresCopy.indexOf(valor) + 1].precio;
+        return Text(
+          dif.toStringAsFixed(2),
+          textAlign: TextAlign.center,
+          style: TextStyle(color: dif < 0 ? Colors.red : Colors.green),
+        );
+      }
+      return const Text('');
+    } else {
+      if (valoresCopy.length > (valoresCopy.indexOf(valor) - 1) && valoresCopy.indexOf(valor) > 0) {
+        var dif = valor.precio - valoresCopy[valoresCopy.indexOf(valor) - 1].precio;
+        return Text(
+          dif.toStringAsFixed(2),
+          textAlign: TextAlign.center,
+          style: TextStyle(color: dif < 0 ? Colors.red : Colors.green),
+        );
+      }
+      return const Text('');
+    }
+  }
+
   @override
+  Widget build(BuildContext context) {
+    return valoresCopy.isEmpty
+        ? const Center(child: Text('Sin datos'))
+        : Column(
+            children: [
+              Container(
+                color: Colors.amber,
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 1,
+                      child: IconButton(
+                        icon: const Icon(Icons.swap_vert),
+                        onPressed: () => _changeSort(),
+                      ),
+                    ),
+                    const Expanded(
+                      flex: 2,
+                      child: Text(
+                        'FECHA',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const Expanded(
+                        flex: 1,
+                        child: Text(
+                          'PRECIO',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        )),
+                    const Expanded(
+                        flex: 1,
+                        child: Text(
+                          '+/-',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        )),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.only(top: 14),
+                  separatorBuilder: (context, index) =>
+                      const Divider(color: Colors.grey, height: 24, indent: 10, endIndent: 10),
+                  shrinkWrap: true,
+                  physics: const ClampingScrollPhysics(),
+                  itemCount: valoresCopy.length,
+                  itemBuilder: (context, index) {
+                    return Row(
+                      children: [
+                        Expanded(
+                          flex: 1,
+                          child: Text(
+                            _isSortDesc ? '${valoresCopy.length - index}' : '$index',
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            _epochFormat(valoresCopy[index].date),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        Expanded(
+                            flex: 1,
+                            child: Text(
+                              '${valoresCopy[index].precio}',
+                              textAlign: TextAlign.center,
+                            )),
+                        Expanded(flex: 1, child: _diferencia(valoresCopy[index])),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+  }
+
+  /*@override
   Widget build(BuildContext context) {
     return widget.valores.isEmpty
         ? const Center(child: Text('Sin datos'))
@@ -106,47 +237,9 @@ class _TablaFondoState extends State<TablaFondo> {
                         ],
                       )
                   ],
-                  /*rows: valoresCopy
-                      .map((valor) => DataRow(cells: [
-                            //DataCell(Text('${valores.indexOf(valor)}')),
-                            DataCell(_isSortAsc
-                                ? Text('${valoresCopy.length - valoresCopy.indexOf(valor)}')
-                                : Text('${valoresCopy.indexOf(valor) + 1}')),
-                            DataCell(Text(_epochFormat(valor.date))),
-                            //TODO: control número de decimales: máx 5
-                            DataCell(Text('${valor.precio}')),
-                            _isSortAsc
-                                ? DataCell(valoresCopy.length > (valoresCopy.indexOf(valor) + 1)
-                                    ? Text(
-                                        (valor.precio -
-                                                valoresCopy[valoresCopy.indexOf(valor) + 1].precio)
-                                            .toStringAsFixed(2),
-                                        style: valor.precio -
-                                                    valoresCopy[valoresCopy.indexOf(valor) + 1]
-                                                        .precio <
-                                                0
-                                            ? const TextStyle(color: Colors.red)
-                                            : const TextStyle(color: Colors.green),
-                                      )
-                                    : const Text(''))
-                                : DataCell(valoresCopy.length > (valoresCopy.indexOf(valor) - 1) &&
-                                        valoresCopy.indexOf(valor) > 0
-                                    ? Text(
-                                        (valoresCopy[valoresCopy.indexOf(valor) - 1].precio -
-                                                valor.precio)
-                                            .toStringAsFixed(2),
-                                        style: valoresCopy[valoresCopy.indexOf(valor) - 1].precio -
-                                                    valor.precio <
-                                                0
-                                            ? const TextStyle(color: Colors.red)
-                                            : const TextStyle(color: Colors.green),
-                                      )
-                                    : const Text('')),
-                          ]))
-                      .toList(),*/
                 ),
               )
             ],
           );
-  }
+  }*/
 }

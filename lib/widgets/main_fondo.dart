@@ -27,6 +27,7 @@ class _MainFondoState extends State<MainFondo> {
   var valores = <Valor>[];
   var valoresByOrder = <Valor>[];
   var valoresCopy = <Valor>[];
+  double? dif;
 
   bool loading = true;
   String msgLoading = '';
@@ -62,6 +63,7 @@ class _MainFondoState extends State<MainFondo> {
           valores = _db.dbValoresByOrder; // ???
           valoresByOrder = _db.dbValoresByOrder;
           valoresCopy = [...valores];
+          dif = widget.fondo.getDif();
         }));
     //TODO: si moneda, lastPrecio y LastDate == null hacer un update
     if (widget.fondo.moneda == null) {}
@@ -98,6 +100,15 @@ class _MainFondoState extends State<MainFondo> {
         lastValor = valores.last;
       });
     }*/ /*
+  }*/
+
+  /*double? _getDiferencia(Fondo fondo) {
+    if (fondo.historico.length > 1) {
+      var last = fondo.historico.first.precio;
+      var prev = fondo.historico[1].precio;
+      return last - prev;
+    }
+    return null;
   }*/
 
   @override
@@ -151,6 +162,15 @@ class _MainFondoState extends State<MainFondo> {
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                       ),
+                //TODO: DIF NO SE ACTUALIZA
+                trailing: dif != null
+                    ? Text(
+                        dif!.toStringAsFixed(2),
+                        style: TextStyle(
+                          color: dif! < 0 ? Colors.red : Colors.green,
+                        ),
+                      )
+                    : const Text(''),
                 // TRAILING HOJA FECHA
                 /*trailing: IconButton(
                   icon: const Icon(Icons.refresh, color: Colors.blue),

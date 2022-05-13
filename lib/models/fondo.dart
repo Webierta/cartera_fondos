@@ -30,7 +30,7 @@ class Fondo {
   double? lastPrecio;
   int? lastDate;
   int participaciones = 0;
-  // enum ??
+  double? dif;
 
   //var valor = <int, double>{};
   late Valor valor;
@@ -89,6 +89,15 @@ class Fondo {
     //List<double> listVL = lastEntry.values.toList();
     //return listVL.first;
     return lastEntry.precio;
+  }
+
+  double? getDif() {
+    if (_historico.length > 1) {
+      var last = _historico.first.precio;
+      var prev = _historico[1].precio;
+      return last - prev;
+    }
+    return null;
   }
 
   /*Map<int, double> getValorByDate(int date) {
