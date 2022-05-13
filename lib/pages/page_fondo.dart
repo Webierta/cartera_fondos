@@ -14,8 +14,8 @@ import '../widgets/grafico_chart.dart';
 import '../widgets/main_fondo.dart';
 import '../widgets/tabla_fondo.dart';
 
-enum ItemRefresh { update, getRange }
-enum ItemMenuFondo { editar, suscribir, reembolsar, eliminar, exportar }
+//enum ItemRefresh { update, getRange }
+enum Menu { editar, suscribir, reembolsar, eliminar, exportar }
 
 class PageFondo extends StatefulWidget {
   final Cartera cartera;
@@ -103,22 +103,45 @@ class _PageFondoState extends State<PageFondo> {
     } else {}
   }*/
 
+  Map<String, IconData> mapItemMenu = {
+    Menu.editar.name: Icons.edit,
+    Menu.suscribir.name: Icons.login,
+    Menu.reembolsar.name: Icons.logout,
+    Menu.eliminar.name: Icons.delete_forever,
+    Menu.exportar.name: Icons.download,
+  };
+
   @override
   Widget build(BuildContext context) {
-    const Map<String, IconData> itemMenu = {
-      'Editar': Icons.edit,
-      'Suscribir': Icons.login,
-      'Reembolsar': Icons.logout,
-      'Eliminar': Icons.delete_forever,
-      'Exportar': Icons.download,
-    };
-
-    List<ListTile> listaItemMenu = itemMenu.entries
-        .map((e) => ListTile(
-              leading: Icon(e.value, color: Colors.white),
-              title: Text(e.key, style: const TextStyle(color: Colors.white)),
+    /* List<Column> listItemMenu = mapItemMenu.entries
+        .map((e) => Column(
+              children: [
+                ListTile(
+                  leading: Icon(e.value, color: Colors.white),
+                  title: Text(
+                    '${e.key[0].toUpperCase()}${e.key.substring(1)}',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+                if (e.key == Menu.editar.name || e.key == Menu.reembolsar.name)
+                  const PopupMenuDivider(height: 10),
+              ],
             ))
-        .toList();
+        .toList();*/
+    List<Column> listItemMenu = [
+      for (var item in mapItemMenu.entries)
+        Column(children: [
+          ListTile(
+            leading: Icon(item.value, color: Colors.white),
+            title: Text(
+              '${item.key[0].toUpperCase()}${item.key.substring(1)}',
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+          if (item.key == Menu.editar.name || item.key == Menu.reembolsar.name)
+            const PopupMenuDivider(height: 10),
+        ])
+    ];
 
     return Scaffold(
       appBar: AppBar(
@@ -142,25 +165,29 @@ class _PageFondoState extends State<PageFondo> {
             shape: const RoundedRectangleBorder(
               borderRadius: BorderRadius.all(Radius.circular(8.0)),
             ),
-            itemBuilder: (ctx) => listaItemMenu
+            /*itemBuilder: (ctx) => listItemMenu
                 .asMap()
                 .entries
-                .map((e) => PopupMenuItem(value: e.key, child: e.value))
-                .toList(),
-            onSelected: (value) {
+                .map((e) => PopupMenuItem(value: Menu.values[e.key], child: e.value))
+                .toList(),*/
+            itemBuilder: (ctx) => [
+              for (var item in listItemMenu)
+                PopupMenuItem(value: Menu.values[listItemMenu.indexOf(item)], child: item)
+            ],
+            onSelected: (Menu item) {
               //TODO: ACCIONES PENDIENTES
-              if (value == ItemMenuFondo.editar.index) {
+              if (item == Menu.editar) {
                 print('EDITAR');
                 //TODO SUBPAGE de operar con suscribir y reembolsar
-              } else if (value == ItemMenuFondo.suscribir.index) {
+              } else if (item == Menu.suscribir) {
                 print('SUSCRIBIR');
-              } else if (value == ItemMenuFondo.reembolsar.index) {
+              } else if (item == Menu.reembolsar) {
                 print('REEMBOLSAR');
-              } else if (value == ItemMenuFondo.eliminar.index) {
+              } else if (item == Menu.eliminar) {
                 _deleteConfirm(context);
-              } else if (value == ItemMenuFondo.exportar.index) {
+              } else if (item == Menu.exportar) {
                 print('EXPORTAR');
-              } else {}
+              }
             },
           ),
         ],

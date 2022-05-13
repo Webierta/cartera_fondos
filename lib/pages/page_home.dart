@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+//import 'package:sqflite_common/sqlite_api.dart';
 
 import '../models/cartera.dart';
 import '../models/fondo.dart';
 import '../routes.dart';
-import '../services/sqlite_service.dart';
+import '../services/sqlite.dart';
+//import '../services/sqlite_service.dart';
 import '../widgets/my_drawer.dart';
 
-enum ItemMenu { sortAlpha, exportar, eliminar }
+enum Menu { ordenar, exportar, eliminar }
 
 class PageHome extends StatefulWidget {
   const PageHome({Key? key}) : super(key: key);
@@ -17,7 +19,9 @@ class PageHome extends StatefulWidget {
 }
 
 class _PageHomeState extends State<PageHome> {
-  late SqliteService _sqlite;
+  late Sqlite _db;
+  // VERSION _SQLITE
+  //late SqliteService _sqlite;
 
   late TextEditingController _controller;
   bool _validText = false;
@@ -26,34 +30,55 @@ class _PageHomeState extends State<PageHome> {
   var fondos = <Fondo>[];
   Map<String, List<Fondo>> mapCarteraFondos = {};
 
-  bool _isLoading = true;
+  //bool _isLoading = true;
 
   @override
   void initState() {
     _controller = TextEditingController();
-    _sqlite = SqliteService();
+    // VERSION _SQLITE
+    /*_sqlite = SqliteService();
     _sqlite.initDB().whenComplete(() async {
       await _refreshCarteras();
       _isLoading = false;
+    });*/
+    _db = Sqlite();
+    _db.openDb().whenComplete(() async {
+      await _updateDbCarteras();
     });
     super.initState();
   }
 
-  _refreshCarteras() async {
+  _updateDbCarteras() async {
+    await _db.getCarteras();
+    setState(() => carteras = _db.dbCarteras);
+    for (var cartera in carteras) {
+      await _updateDbFondos(cartera);
+    }
+  }
+
+  _updateDbFondos(Cartera cartera) async {
+    await _db.getFondos(cartera);
+    setState(() {
+      fondos = _db.dbFondos;
+      mapCarteraFondos[cartera.name] = fondos;
+    });
+  }
+
+  // VERSION _SQLITE
+  /*_refreshCarteras() async {
     final data = await _sqlite.getCarteras();
     setState(() => carteras = data);
     for (var cartera in carteras) {
       await _refreshFondos(cartera);
     }
   }
-
   _refreshFondos(Cartera cartera) async {
     final data = await _sqlite.getFondos(cartera);
     setState(() {
       fondos = data;
       mapCarteraFondos[cartera.name] = fondos;
     });
-  }
+  }*/
 
   @override
   void dispose() {
@@ -61,67 +86,176 @@ class _PageHomeState extends State<PageHome> {
     super.dispose();
   }
 
-  PopupMenuItem _buildPopupMenuItem(String title, IconData iconData, int position) {
-    return PopupMenuItem(
-      value: position,
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Icon(iconData, color: Colors.white),
-              const SizedBox(width: 10),
-              Text(title),
-            ],
-          ),
-          if (position == 0)
-            const Padding(
-              padding: EdgeInsets.only(top: 10),
-              child: PopupMenuDivider(height: 10),
-            ),
-        ],
-      ),
-    );
-  }
-
-  _onMenuItemSelected(int value) {
-    if (value == ItemMenu.sortAlpha.index) {
-      _sqlite.orderByName(carteras);
-      _refreshCarteras();
-    } else if (value == ItemMenu.exportar.index) {
-      print('EXPORTAR');
-    } else if (value == ItemMenu.eliminar.index) {
-      _deleteConfirm(context);
-    } else {}
-  }
+  Map<String, IconData> mapItemMenu = {
+    Menu.ordenar.name: Icons.sort_by_alpha,
+    Menu.exportar.name: Icons.save,
+    Menu.eliminar.name: Icons.delete_forever,
+  };
 
   @override
   Widget build(BuildContext context) {
+    /*List<Column> listItemMenu = mapItemMenu.entries
+        .map((e) => Column(
+              children: [
+                ListTile(
+                  leading: Icon(e.value, color: Colors.white),
+                  title: Text(
+                    '${e.key[0].toUpperCase()}${e.key.substring(1)}',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+                if (e.key == Menu.ordenar.name) const PopupMenuDivider(height: 10),
+              ],
+            ))
+        .toList();*/
+
+    List<Column> listItemMenu = [
+      for (var item in mapItemMenu.entries)
+        Column(children: [
+          ListTile(
+            leading: Icon(item.value, color: Colors.white),
+            title: Text(
+              '${item.key[0].toUpperCase()}${item.key.substring(1)}',
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+          if (item.key == Menu.ordenar.name) const PopupMenuDivider(height: 10),
+        ])
+    ];
+
     return Scaffold(
       appBar: AppBar(
         title: const FittedBox(child: Text('MIS CARTERAS')),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => _refreshCarteras(),
+            // VERSION _SQLITE
+            //onPressed: () => _refreshCarteras(),
+            onPressed: () => _updateDbCarteras(),
           ),
           PopupMenuButton(
-            onSelected: (value) => _onMenuItemSelected(value as int),
             color: Colors.blue,
             offset: Offset(0.0, AppBar().preferredSize.height),
             shape: const RoundedRectangleBorder(
               borderRadius: BorderRadius.all(Radius.circular(8.0)),
             ),
+            /*itemBuilder: (ctx) => listItemMenu
+                .asMap()
+                .entries
+                .map((e) => PopupMenuItem(value: Menu.values[e.key], child: e.value))
+                .toList(),*/
             itemBuilder: (ctx) => [
-              _buildPopupMenuItem('Por Nombre', Icons.sort_by_alpha, ItemMenu.sortAlpha.index),
-              //_buildPopupMenuItem('Por Rentabilidad', Icons.sort, Options.sort.index),
-              _buildPopupMenuItem('Exportar', Icons.save, ItemMenu.exportar.index),
-              _buildPopupMenuItem('Eliminar', Icons.delete_forever, ItemMenu.eliminar.index),
+              for (var item in listItemMenu)
+                PopupMenuItem(value: Menu.values[listItemMenu.indexOf(item)], child: item)
             ],
-          )
+            onSelected: (Menu item) async {
+              //TODO: ACCIONES PENDIENTES
+              if (item == Menu.ordenar) {
+                // VERSION _SQLITE
+                //_sqlite.orderByName(carteras);
+                //_refreshCarteras();
+                // TODO: execute db order
+                //await _db.orderCarteras();
+                var carterasSort = <Cartera>[];
+                carterasSort = [...carteras];
+                carterasSort.sort((a, b) => a.name.compareTo(b.name));
+                /*for (var cartera in carteras) {
+                  _db.deleteCarteraInCarteras(cartera);
+                }*/
+                _db.deleteAllCarteraInCarteras();
+                for (var cartera in carterasSort) {
+                  _db.insertCartera(cartera);
+                }
+                _updateDbCarteras();
+                print('ORDENAR POR NOMBRE');
+              } else if (item == Menu.exportar) {
+                print('EXPORTAR');
+              } else if (item == Menu.eliminar) {
+                _deleteConfirm(context);
+              }
+            },
+          ),
         ],
       ),
       drawer: const MyDrawer(),
-      body: _isLoading
+      body: FutureBuilder<bool>(
+        future: _db.openDb(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.done) {
+            if (snapshot.hasError) {
+              return Center(
+                child: Text(
+                  '${snapshot.error}',
+                  style: const TextStyle(fontSize: 18),
+                ),
+              );
+            } else if (snapshot.hasData) {
+              return carteras.isEmpty
+                  ? const Center(child: Text('No hay carteras guardadas.'))
+                  : ListView.builder(
+                      itemCount: carteras.length,
+                      itemBuilder: (context, index) {
+                        int nFondos = mapCarteraFondos[carteras[index].name]?.length ?? 0;
+                        return Dismissible(
+                          key: UniqueKey(),
+                          direction: DismissDirection.endToStart,
+                          child: Card(
+                            child: ListTile(
+                              leading: const Icon(Icons.business_center_sharp, size: 32),
+                              title: Text(carteras[index].name),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: const [
+                                  Text('Inversión: 2.156,23 €'),
+                                  Text('Valor (12/04/2019): 4.5215,14 €'),
+                                  Text('Rendimiento: +2.345,32 €'),
+                                  Text('Rentabilidad: 10 %'),
+                                ],
+                              ),
+                              trailing: CircleAvatar(child: Text('$nFondos')),
+                              onTap: () => Navigator.of(context).pushNamed(
+                                RouteGenerator.carteraPage,
+                                arguments: carteras[index],
+                              ),
+                            ),
+                          ),
+                          background: Container(
+                            color: Colors.red,
+                            margin: const EdgeInsets.symmetric(horizontal: 15),
+                            alignment: Alignment.centerRight,
+                            child: const Padding(
+                              padding: EdgeInsets.all(10.0),
+                              child: Icon(
+                                Icons.delete,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          onDismissed: (_) async {
+                            // VERSION _SQLITE
+                            //await _deleteCartera(carteras[index]);
+                            //await _refreshCarteras();
+                            await _db.deleteCarteraInCarteras(carteras[index]);
+                            await _updateDbCarteras();
+                          },
+                        );
+                      },
+                    );
+            }
+          }
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                CircularProgressIndicator(),
+                SizedBox(height: 10),
+                Text('Recuperando carteras...'),
+              ],
+            ),
+          );
+        },
+      ),
+      /*body: _isLoading
           ? Center(
               child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -172,13 +306,16 @@ class _PageHomeState extends State<PageHome> {
                         ),
                       ),
                       onDismissed: (_) async {
-                        await _deleteCartera(carteras[index]);
-                        await _refreshCarteras();
+                        // VERSION _SQLITE
+                        //await _deleteCartera(carteras[index]);
+                        //await _refreshCarteras();
+                        await _db.deleteCarteraInCarteras(carteras[index]);
+                        await _updateDbCarteras();
                       },
                     );
                   },
                 )
-              : const Center(child: Text('No hay carteras guardadas.')),
+              : const Center(child: Text('No hay carteras guardadas.')),*/
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
         onPressed: () => _carteraInput(context),
@@ -238,11 +375,49 @@ class _PageHomeState extends State<PageHome> {
                         var _alpha = _input.replaceAll(RegExp('[^a-zA-Z0-9_]'), '');
                         var _name = _alpha.startsWith(RegExp(r'[0-9]')) ? '_$_alpha' : _alpha;
                         _controller.value.text.replaceAll(RegExp('[^a-zA-Z0-9_]'), '');*/
-                        await _sqlite.insertCartera(Cartera(name: _input));
+
+                        var existe = [for (var cartera in carteras) cartera.name].contains(_input);
+                        /*var existe = false;
+                        for (var cartera in carteras) {
+                          if (cartera.name == _input) {
+                            existe = true;
+                            break;
+                          }
+                        }*/
+                        if (existe) {
+                          _controller.clear();
+                          Navigator.pop(context);
+                          _showMsg(
+                            msg: 'Ya existe una cartera con ese nombre.',
+                            color: Colors.red,
+                          );
+                        } else {
+                          await _db.insertCartera(Cartera(name: _input));
+                          await _db.createTableCartera(Cartera(name: _input));
+                          await _updateDbCarteras();
+                          _controller.clear();
+                          Navigator.pop(context);
+                        }
+
+                        /*if (await _db.existeTable(_input)) {
+                          print('YA EXISTE');
+                        } else {
+                          await _db.insertCartera(Cartera(name: _input));
+                          await _db.createTableCartera(Cartera(name: _input));
+                          await _updateDbCarteras();
+                          _controller.clear();
+                          Navigator.pop(context);
+                        }*/
+                        //print(check);
+
+                        // if carteras contains Cartera(name: _input) ...
+
+                        // VERSION _SQLITE
+                        /*await _sqlite.insertCartera(Cartera(name: _input));
                         await _sqlite.createTableCartera(Cartera(name: _input));
-                        await _refreshCarteras();
-                        _controller.clear();
-                        Navigator.pop(context);
+                        await _refreshCarteras();*/
+                        //_controller.clear();
+                        //Navigator.pop(context);
                       }
                     },
                   ),
@@ -276,7 +451,9 @@ class _PageHomeState extends State<PageHome> {
                   for (var cartera in carteras) {
                     await _deleteCartera(cartera);
                   }
-                  await _refreshCarteras();
+                  // VERSION _SQLITE
+                  //await _refreshCarteras();
+                  await _updateDbCarteras();
                   Navigator.of(context).pop();
                 },
               ),
@@ -286,13 +463,27 @@ class _PageHomeState extends State<PageHome> {
   }
 
   _deleteCartera(Cartera cartera) async {
-    List<Fondo> allFondosCartera = await _sqlite.getFondos(cartera);
+    // VERSION _SQLITE
+    /*List<Fondo> allFondosCartera = await _sqlite.getFondos(cartera);
     if (allFondosCartera.isNotEmpty) {
       for (var fondo in allFondosCartera) {
         await _sqlite.deleteAllValoresInFondo(cartera, fondo);
       }
     }
     await _sqlite.deleteAllFondosInCartera(cartera);
-    await _sqlite.deleteCarteraInCarteras(cartera);
+    await _sqlite.deleteCarteraInCarteras(cartera);*/
+    await _db.getFondos(cartera);
+    if (_db.dbFondos.isNotEmpty) {
+      for (var fondo in _db.dbFondos) {
+        await _db.deleteAllValoresInFondo(cartera, fondo);
+      }
+    }
+    await _db.deleteAllFondosInCartera(cartera);
+    await _db.deleteCarteraInCarteras(cartera);
   }
+
+  void _showMsg({required String msg, MaterialColor color = Colors.grey}) =>
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), backgroundColor: color),
+      );
 }
