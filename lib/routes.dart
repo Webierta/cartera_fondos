@@ -28,15 +28,14 @@ class RouteGenerator {
       case homePage:
         return MaterialPageRoute(builder: (context) => const PageHome());
       case carteraPage:
-        return MaterialPageRoute(builder: (context) => PageCartera(cartera: args as Cartera));
+        //return MaterialPageRoute(builder: (context) => PageCartera(cartera: args as Cartera));
+        return MaterialPageRoute(builder: (context) => const PageCartera());
       case fondoPage:
         return MaterialPageRoute(builder: (BuildContext context) {
-          ScreenArguments argument = args as ScreenArguments;
+          //ScreenArguments argument = args as ScreenArguments;
           //final args = ModalRoute.of(context)!.settings.arguments as ScreenArguments;
-          return PageFondo(
-            cartera: args.cartera,
-            fondo: args.fondo,
-          );
+          //return PageFondo(cartera: args.cartera, fondo: args.fondo);
+          return const PageFondo();
         });
       /*return MaterialPageRoute(
             builder: (context) => PageFondo(

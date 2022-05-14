@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+//import 'package:flutter/material.dart';
 
 import 'valor.dart';
 
@@ -30,7 +30,7 @@ class Fondo {
   double? lastPrecio;
   int? lastDate;
   int participaciones = 0;
-  double? dif;
+  //double? dif;
 
   //var valor = <int, double>{};
   late Valor valor;
@@ -91,14 +91,14 @@ class Fondo {
     return lastEntry.precio;
   }
 
-  double? getDif() {
+  /*double? getDif() {
     if (_historico.length > 1) {
       var last = _historico.first.precio;
       var prev = _historico[1].precio;
       return last - prev;
     }
     return null;
-  }
+  }*/
 
   /*Map<int, double> getValorByDate(int date) {
     return _historico[date];

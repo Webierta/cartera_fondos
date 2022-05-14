@@ -3,7 +3,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import 'models/cartera.dart';
+//import 'models/cartera.dart';
+import 'models/carfoin_provider.dart';
 import 'routes.dart';
 
 Future main() async {
@@ -13,7 +14,8 @@ Future main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => Carteras()),
+        //ChangeNotifierProvider(create: (_) => Carteras()),
+        ChangeNotifierProvider(create: (_) => CarfoinProvider()),
         //ChangeNotifierProvider<Cartera>(create: (_) => Cartera(name: 'Provider')),
         /*ProxyProvider0(
           update: (_, __) => Cartera(name: name),

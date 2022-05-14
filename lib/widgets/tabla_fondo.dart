@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+//import 'package:intl/intl.dart';
 
+import '../models/carfoin_provider.dart';
 import '../models/valor.dart';
+import '../utils/fecha_util.dart';
 
 class TablaFondo extends StatefulWidget {
-  final List<Valor> valores;
-  const TablaFondo({Key? key, required this.valores}) : super(key: key);
+  //final List<Valor> valores;
+  //const TablaFondo({Key? key, required this.valores}) : super(key: key);
+  const TablaFondo({Key? key}) : super(key: key);
 
   @override
   State<TablaFondo> createState() => _TablaFondoState();
@@ -13,73 +17,49 @@ class TablaFondo extends StatefulWidget {
 //TODO OBTENER VALORES DESDE AQUI??
 
 class _TablaFondoState extends State<TablaFondo> {
-  var valoresCopy = <Valor>[];
-  int _currentSortColumn = 0;
+  var valoresOn = <Valor>[];
   bool _isSortDesc = true;
 
   @override
   void initState() {
-    valoresCopy = [...widget.valores];
+    //final valoresOn = context.read<CarfoinProvider>().getValores;
+    //valoresCopy = [...valoresOn];
+    valoresOn = context.read<CarfoinProvider>().getValores;
     super.initState();
   }
 
-  String _epochFormat(int epoch) {
-    final DateTime date = DateTime.fromMillisecondsSinceEpoch(epoch * 1000);
-    final DateFormat formatter = DateFormat('dd/MM/yy');
-    return formatter.format(date);
-  }
-
   _changeSort() {
-    setState(() {
-      if (!_isSortDesc) {
-        valoresCopy.sort((a, b) => b.date.compareTo(a.date));
-      } else {
-        valoresCopy.sort((a, b) => a.date.compareTo(b.date));
-      }
-      _isSortDesc = !_isSortDesc;
-    });
+    //setState(() {
+    if (!_isSortDesc) {
+      valoresOn.sort((a, b) => b.date.compareTo(a.date));
+    } else {
+      valoresOn.sort((a, b) => a.date.compareTo(b.date));
+    }
+    setState(() => _isSortDesc = !_isSortDesc);
+    //});
   }
-
-  /*DataCell(valoresCopy.length > (valoresCopy.indexOf(valor) + 1)
-    ? Text(
-      (valor.precio - valoresCopy[valoresCopy.indexOf(valor) + 1].precio.toStringAsFixed(2),
-      style: TextStyle(
-        color: valor.precio -
-        valoresCopy[valoresCopy.indexOf(valor) + 1].precio < 0
-          ? Colors.red
-          : Colors.green,
-      ),
-      )
-    : const Text(''))*/
 
   Text _diferencia(Valor valor) {
-    //TODO: depende si está ordenada ASC (+1) o DESC (-1)
-    if (_isSortDesc) {
-      if (valoresCopy.length > (valoresCopy.indexOf(valor) + 1)) {
-        var dif = valor.precio - valoresCopy[valoresCopy.indexOf(valor) + 1].precio;
-        return Text(
-          dif.toStringAsFixed(2),
-          textAlign: TextAlign.center,
-          style: TextStyle(color: dif < 0 ? Colors.red : Colors.green),
-        );
-      }
-      return const Text('');
-    } else {
-      if (valoresCopy.length > (valoresCopy.indexOf(valor) - 1) && valoresCopy.indexOf(valor) > 0) {
-        var dif = valor.precio - valoresCopy[valoresCopy.indexOf(valor) - 1].precio;
-        return Text(
-          dif.toStringAsFixed(2),
-          textAlign: TextAlign.center,
-          style: TextStyle(color: dif < 0 ? Colors.red : Colors.green),
-        );
-      }
-      return const Text('');
+    int index = _isSortDesc ? 1 : -1;
+    bool condition = _isSortDesc
+        ? valoresOn.length > (valoresOn.indexOf(valor) + 1)
+        : valoresOn.length > (valoresOn.indexOf(valor) - 1) && valoresOn.indexOf(valor) > 0;
+
+    if (condition) {
+      var dif = valor.precio - valoresOn[valoresOn.indexOf(valor) + index].precio;
+      return Text(
+        dif.toStringAsFixed(2),
+        textAlign: TextAlign.center,
+        style: TextStyle(color: dif < 0 ? Colors.red : Colors.green),
+      );
     }
+    return const Text('');
   }
 
   @override
   Widget build(BuildContext context) {
-    return valoresCopy.isEmpty
+    //final valoresCopy = context.read<CarfoinProvider>().getValores;
+    return valoresOn.isEmpty
         ? const Center(child: Text('Sin datos'))
         : Column(
             children: [
@@ -88,20 +68,18 @@ class _TablaFondoState extends State<TablaFondo> {
                 child: Row(
                   children: [
                     Expanded(
-                      flex: 1,
-                      child: IconButton(
-                        icon: const Icon(Icons.swap_vert),
-                        onPressed: () => _changeSort(),
-                      ),
-                    ),
+                        flex: 1,
+                        child: IconButton(
+                          icon: const Icon(Icons.swap_vert),
+                          onPressed: () => _changeSort(),
+                        )),
                     const Expanded(
-                      flex: 2,
-                      child: Text(
-                        'FECHA',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
+                        flex: 2,
+                        child: Text(
+                          'FECHA',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        )),
                     const Expanded(
                         flex: 1,
                         child: Text(
@@ -126,31 +104,30 @@ class _TablaFondoState extends State<TablaFondo> {
                       const Divider(color: Colors.grey, height: 24, indent: 10, endIndent: 10),
                   shrinkWrap: true,
                   physics: const ClampingScrollPhysics(),
-                  itemCount: valoresCopy.length,
+                  itemCount: valoresOn.length,
                   itemBuilder: (context, index) {
                     return Row(
                       children: [
                         Expanded(
-                          flex: 1,
-                          child: Text(
-                            _isSortDesc ? '${valoresCopy.length - index}' : '$index',
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
+                            flex: 1,
+                            child: Text(
+                              _isSortDesc ? '${valoresOn.length - index}' : '$index',
+                              textAlign: TextAlign.center,
+                            )),
                         Expanded(
-                          flex: 2,
-                          child: Text(
-                            _epochFormat(valoresCopy[index].date),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
+                            flex: 2,
+                            child: Text(
+                              //_epochFormat(valoresCopy[index].date),
+                              FechaUtil.epochToString(valoresOn[index].date),
+                              textAlign: TextAlign.center,
+                            )),
                         Expanded(
                             flex: 1,
                             child: Text(
-                              '${valoresCopy[index].precio}',
+                              '${valoresOn[index].precio}',
                               textAlign: TextAlign.center,
                             )),
-                        Expanded(flex: 1, child: _diferencia(valoresCopy[index])),
+                        Expanded(flex: 1, child: _diferencia(valoresOn[index])),
                       ],
                     );
                   },
@@ -159,87 +136,4 @@ class _TablaFondoState extends State<TablaFondo> {
             ],
           );
   }
-
-  /*@override
-  Widget build(BuildContext context) {
-    return widget.valores.isEmpty
-        ? const Center(child: Text('Sin datos'))
-        : ListView(
-            shrinkWrap: true,
-            physics: const ClampingScrollPhysics(),
-            children: [
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  sortColumnIndex: _currentSortColumn,
-                  sortAscending: _isSortAsc,
-                  columnSpacing: 30,
-                  //horizontalMargin: 0,
-                  columns: [
-                    DataColumn(
-                        label: const Text('#'),
-                        numeric: true,
-                        onSort: (columnIndex, _) {
-                          setState(() {
-                            _currentSortColumn = columnIndex;
-                            if (!_isSortAsc) {
-                              valoresCopy.sort((a, b) => b.date.compareTo(a.date));
-                            } else {
-                              valoresCopy.sort((a, b) => a.date.compareTo(b.date));
-                            }
-                            _isSortAsc = !_isSortAsc;
-                          });
-                        }),
-                    const DataColumn(label: Text('FECHA'), numeric: true),
-                    const DataColumn(label: Text('PRECIO'), numeric: true),
-                    const DataColumn(label: Text('+/-'), numeric: true),
-                  ],
-                  rows: [
-                    for (var valor in valoresCopy)
-                      DataRow(
-                        cells: [
-                          //DataCell(Text('${valores.indexOf(valor)}')),
-                          DataCell(_isSortAsc
-                              ? Text('${valoresCopy.length - valoresCopy.indexOf(valor)}')
-                              : Text('${valoresCopy.indexOf(valor) + 1}')),
-                          DataCell(Text(_epochFormat(valor.date))),
-                          //TODO: control número de decimales: máx 5
-                          DataCell(Text('${valor.precio}')),
-                          _isSortAsc
-                              ? DataCell(valoresCopy.length > (valoresCopy.indexOf(valor) + 1)
-                                  ? Text(
-                                      (valor.precio -
-                                              valoresCopy[valoresCopy.indexOf(valor) + 1].precio)
-                                          .toStringAsFixed(2),
-                                      style: TextStyle(
-                                        color: valor.precio -
-                                                    valoresCopy[valoresCopy.indexOf(valor) + 1]
-                                                        .precio <
-                                                0
-                                            ? Colors.red
-                                            : Colors.green,
-                                      ),
-                                    )
-                                  : const Text(''))
-                              : DataCell(valoresCopy.length > (valoresCopy.indexOf(valor) - 1) &&
-                                      valoresCopy.indexOf(valor) > 0
-                                  ? Text(
-                                      (valoresCopy[valoresCopy.indexOf(valor) - 1].precio -
-                                              valor.precio)
-                                          .toStringAsFixed(2),
-                                      style: valoresCopy[valoresCopy.indexOf(valor) - 1].precio -
-                                                  valor.precio <
-                                              0
-                                          ? const TextStyle(color: Colors.red)
-                                          : const TextStyle(color: Colors.green),
-                                    )
-                                  : const Text('')),
-                        ],
-                      )
-                  ],
-                ),
-              )
-            ],
-          );
-  }*/
 }

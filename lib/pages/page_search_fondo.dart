@@ -22,18 +22,21 @@ class _PageSearchFondoState extends State<PageSearchFondo> {
   @override
   void initState() {
     //_controller = TextEditingController();
-    readJson();
-    _filterFondos = _allFondos;
+    readJson().whenComplete(() => _filterFondos = _allFondos);
+    //_filterFondos = _allFondos;
     super.initState();
   }
 
   Future<void> readJson() async {
     final String response = await rootBundle.loadString('assets/fondos_all.json');
     final data = await json.decode(response);
+    for (var item in data) {
+      _allFondos.add(item);
+    }
     setState(() {
-      for (var item in data) {
+      /*for (var item in data) {
         _allFondos.add(item);
-      }
+      }*/
       _isLoading = false;
     });
   }
@@ -89,7 +92,7 @@ class _PageSearchFondoState extends State<PageSearchFondo> {
                           itemCount: _filterFondos.length,
                           itemBuilder: (context, index) => Card(
                             key: ValueKey(_filterFondos[index]['isin']),
-                            color: Colors.amberAccent,
+                            color: Colors.amber,
                             elevation: 4,
                             margin: const EdgeInsets.symmetric(vertical: 10),
                             child: ListTile(
@@ -118,58 +121,4 @@ class _PageSearchFondoState extends State<PageSearchFondo> {
       ),
     );
   }
-
-  /*@override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Container(
-          width: double.infinity,
-          height: 40,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(5),
-          ),
-          child: Center(
-            child: TextField(
-              //controller: _controller,
-              onChanged: (value) => _runFilter(value),
-              decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: () {
-                      //_controller.clear();
-                    },
-                  ),
-                  hintText: 'Buscar...',
-                  border: InputBorder.none),
-            ),
-          ),
-        ),
-      ),
-      body: _foundUsers.isNotEmpty
-          ? ListView.builder(
-              itemCount: _foundUsers.length,
-              itemBuilder: (context, index) => Card(
-                key: ValueKey(_foundUsers[index]["id"]),
-                color: Colors.amberAccent,
-                elevation: 4,
-                margin: const EdgeInsets.symmetric(vertical: 10),
-                child: ListTile(
-                  leading: Text(
-                    _foundUsers[index]["id"].toString(),
-                    style: const TextStyle(fontSize: 24),
-                  ),
-                  title: Text(_foundUsers[index]['name']),
-                  subtitle: Text('${_foundUsers[index]["age"].toString()} years old'),
-                ),
-              ),
-            )
-          : const Text(
-              'No results found',
-              style: TextStyle(fontSize: 24),
-            ),
-    );
-  }*/
 }
