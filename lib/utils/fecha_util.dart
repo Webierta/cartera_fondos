@@ -2,7 +2,8 @@ import 'package:intl/intl.dart';
 
 class FechaUtil {
   static String dateToString({required DateTime date, String formato = 'd/MM/yy'}) {
-    return DateFormat(formato).format(date);
+    // DateFormat.yMMM('es').format(dateTime)
+    return DateFormat(formato, 'es').format(date);
   }
 
   static DateTime epochToDate(int epoch) {

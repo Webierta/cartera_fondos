@@ -1,12 +1,9 @@
-//import 'package:cartera_fondos/models/data_api_range.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:provider/provider.dart';
-//import 'package:intl/intl.dart';
 
 import '../models/carfoin_provider.dart';
 import '../models/cartera.dart';
-//import '../models/data_api.dart';
 import '../models/fondo.dart';
 import '../models/valor.dart';
 import '../routes.dart';
@@ -20,9 +17,6 @@ import '../widgets/tabla_fondo.dart';
 enum Menu { editar, suscribir, reembolsar, eliminar, exportar }
 
 class PageFondo extends StatefulWidget {
-  //final Cartera cartera;
-  //final Fondo fondo;
-  //const PageFondo({Key? key, required this.cartera, required this.fondo}) : super(key: key);
   const PageFondo({Key? key}) : super(key: key);
 
   @override
@@ -33,20 +27,12 @@ class _PageFondoState extends State<PageFondo> {
   late CarfoinProvider carfoin;
   late Cartera carteraOn;
   late Fondo fondoOn;
-  late List<Valor> valoresOn;
   late Sqlite _db;
   late ApiService apiService;
 
-  var valores = <Valor>[];
-  var valoresByOrder = <Valor>[];
-  var valoresCopy = <Valor>[];
-
   bool loading = true;
   String msgLoading = '';
-
   int _selectedIndex = 0;
-  var listaWidgets = <Widget>[];
-  late ListView mainFondo;
 
   @override
   void initState() {
@@ -69,33 +55,13 @@ class _PageFondoState extends State<PageFondo> {
   }
 
   _updateValores() async {
-    setState(() {
-      loading = true;
-      valores = <Valor>[];
-      valoresByOrder = <Valor>[];
-      valoresCopy = <Valor>[];
-    });
-
+    setState(() => loading = true);
     await _db.createTableFondo(carteraOn, fondoOn);
-    setState(() => msgLoading = 'Obteniendo datos...');
+    setState(() => msgLoading = 'Cargando datos almacenados...');
     await _db.getValoresByOrder(carteraOn, fondoOn).whenComplete(() => setState(() {
           loading = false;
           msgLoading = '';
-          valores = _db.dbValoresByOrder; // ???
-          valoresByOrder = _db.dbValoresByOrder;
-          valoresCopy = [...valores];
-
-          //carfoin.setCartera = carteraOn;
-          //carfoin.setFondo = fondoOn;
-          carfoin.setValores = valores;
-
-          listaWidgets.clear();
-          //listaWidgets.add(MainFondo(cartera: carteraOn, fondo: fondoOn));
-          //listaWidgets.add(TablaFondo(valores: valores));
-          //listaWidgets.add(GraficoChart(valores: valores));
-          listaWidgets.add(const MainFondo());
-          listaWidgets.add(const TablaFondo());
-          listaWidgets.add(const GraficoChart());
+          carfoin.setValores = _db.dbValoresByOrder;
         }));
     //TODO: si moneda, lastPrecio y LastDate == null hacer un update
     if (fondoOn.moneda == null) {}
@@ -103,21 +69,15 @@ class _PageFondoState extends State<PageFondo> {
     //TODO: ordenar primero por date ??
   }
 
-  final Map<String, IconData> mapItemMenu = {
-    Menu.editar.name: Icons.edit,
-    Menu.suscribir.name: Icons.login,
-    Menu.reembolsar.name: Icons.logout,
-    Menu.eliminar.name: Icons.delete_forever,
-    Menu.exportar.name: Icons.download,
-  };
-
-  final List<IconData> iconsTab = [Icons.assessment, Icons.table_rows_outlined, Icons.timeline];
-
-  @override
-  Widget build(BuildContext context) {
-    //final carfoin = Provider.of<CarfoinProvider>(context);
-
-    List<Column> listItemMenu = [
+  List<Column> _buildListMenu(BuildContext context) {
+    final Map<String, IconData> mapItemMenu = {
+      Menu.editar.name: Icons.edit,
+      Menu.suscribir.name: Icons.login,
+      Menu.reembolsar.name: Icons.logout,
+      Menu.eliminar.name: Icons.delete_forever,
+      Menu.exportar.name: Icons.download,
+    };
+    return [
       for (var item in mapItemMenu.entries)
         Column(children: [
           ListTile(
@@ -131,20 +91,23 @@ class _PageFondoState extends State<PageFondo> {
             const PopupMenuDivider(height: 10),
         ])
     ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const listaTabs = [MainFondo(), TablaFondo(), GraficoChart()];
+    const List<IconData> iconsTab = [Icons.assessment, Icons.table_rows_outlined, Icons.timeline];
 
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () async {
-            //await _updateValores();  //TODO: ACTUALIZA AL VOLVER ????
             ScaffoldMessenger.of(context).removeCurrentSnackBar();
-            //Navigator.of(context).pushNamed(RouteGenerator.carteraPage, arguments: widget.cartera);
             // TODO: set carteraOn antes de navigator??
-            Navigator.of(context).pushNamed(RouteGenerator.carteraPage); // POR ESTO ACTUALIZA !!
+            Navigator.of(context).pushNamed(RouteGenerator.carteraPage);
           },
         ),
-        // TODO: variable segun TAB ??
         title: Text(fondoOn.name),
         actions: [
           PopupMenuButton(
@@ -153,10 +116,13 @@ class _PageFondoState extends State<PageFondo> {
             shape: const RoundedRectangleBorder(
               borderRadius: BorderRadius.all(Radius.circular(8.0)),
             ),
-            itemBuilder: (ctx) => [
-              for (var item in listItemMenu)
-                PopupMenuItem(value: Menu.values[listItemMenu.indexOf(item)], child: item)
-            ],
+            itemBuilder: (ctx) {
+              var listItemMenu = _buildListMenu(context);
+              return [
+                for (var item in listItemMenu)
+                  PopupMenuItem(value: Menu.values[listItemMenu.indexOf(item)], child: item)
+              ];
+            },
             onSelected: (Menu item) {
               //TODO: ACCIONES PENDIENTES
               if (item == Menu.editar) {
@@ -177,7 +143,7 @@ class _PageFondoState extends State<PageFondo> {
           ),
         ],
       ),
-      body: loading || listaWidgets.length != iconsTab.length
+      body: loading
           ? Padding(
               padding: const EdgeInsets.only(top: 50, left: 20, right: 20),
               child: Column(
@@ -188,7 +154,7 @@ class _PageFondoState extends State<PageFondo> {
                 ],
               ),
             )
-          : listaWidgets.elementAt(_selectedIndex),
+          : listaTabs.elementAt(_selectedIndex),
       bottomNavigationBar: BottomAppBar(
         color: Colors.blue,
         shape: const CircularNotchedRectangle(),
@@ -198,21 +164,25 @@ class _PageFondoState extends State<PageFondo> {
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
             for (var icon in iconsTab)
-              IconButton(
-                icon: Icon(
-                  icon,
-                  color: _selectedIndex == iconsTab.indexOf(icon) ? Colors.white : Colors.white38,
+              Expanded(
+                child: IconButton(
+                  icon: Icon(
+                    icon,
+                    color: _selectedIndex == iconsTab.indexOf(icon) ? Colors.white : Colors.white38,
+                  ),
+                  //padding: const EdgeInsets.only(left: 32.0, right: 32.0),
+                  iconSize: 32,
+                  onPressed: () => setState(() => _selectedIndex = iconsTab.indexOf(icon)),
                 ),
-                padding: const EdgeInsets.only(left: 32.0),
-                iconSize: 32,
-                onPressed: () => setState(() => _selectedIndex = iconsTab.indexOf(icon)),
-              )
+              ),
+            const Spacer(),
           ],
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
       floatingActionButton: SpeedDial(
-        animatedIcon: AnimatedIcons.menu_close,
+        //animatedIcon: AnimatedIcons.menu_close,
+        //activeIcon: Icons.refresh,
         icon: Icons.refresh,
         spacing: 8,
         spaceBetweenChildren: 4,
@@ -221,12 +191,12 @@ class _PageFondoState extends State<PageFondo> {
         children: [
           SpeedDialChild(
             child: const Icon(Icons.date_range), //dns // list  //
-            label: 'Valores históricos',
+            label: 'Descargar valores históricos',
             backgroundColor: Colors.blue,
             foregroundColor: Colors.white,
             onTap: () {
               ScaffoldMessenger.of(context).removeCurrentSnackBar();
-              getRangeValores(context);
+              _getRangeApi(context);
             },
           ),
           SpeedDialChild(
@@ -236,7 +206,7 @@ class _PageFondoState extends State<PageFondo> {
             foregroundColor: Colors.white,
             onTap: () {
               ScaffoldMessenger.of(context).removeCurrentSnackBar();
-              updateValor();
+              _getDataApi();
             },
           ),
         ],
@@ -244,7 +214,7 @@ class _PageFondoState extends State<PageFondo> {
     );
   }
 
-  void updateValor() async {
+  void _getDataApi() async {
     //TODO: msg updating
     print('UPDATING...');
     final getDataApi = await apiService.getDataApi(fondoOn.isin);
@@ -253,19 +223,12 @@ class _PageFondoState extends State<PageFondo> {
       var newMoneda = getDataApi.market;
       var newLastPrecio = getDataApi.price;
       var newLastDate = getDataApi.epochSecs;
-      setState(() {
-        //fondoOn.moneda = newMoneda;
-        //moneda = newMoneda;
-        //fondoOn.lastPrecio = newLastPrecio;
-        //lastPrecio = newLastPrecio;
-        //fondoOn.lastDate = newLastDate;
-        //widget.fondo.dif = _getDiferencia(widget.fondo);
-        //lastDate = newLastDate;
-        fondoOn
-          ..moneda = newMoneda
-          ..lastPrecio = newLastPrecio
-          ..lastDate = newLastDate;
-      });
+      //setState(() {
+      fondoOn
+        ..moneda = newMoneda
+        ..lastPrecio = newLastPrecio
+        ..lastDate = newLastDate;
+      //});
 
       _db.insertDataApi(carteraOn, fondoOn,
           moneda: newMoneda, lastPrecio: newLastPrecio, lastDate: newLastDate);
@@ -276,21 +239,18 @@ class _PageFondoState extends State<PageFondo> {
       //print(dataApi?.price);
     } else {
       print('ERROR GET DATAAPI');
+      _showMsg(msg: 'Error en la descarga de datos.', color: Colors.red);
     }
   }
 
-  void getRangeValores(BuildContext context) async {
-    final newRange = await Navigator.of(context).pushNamed(
-      RouteGenerator.inputRange,
-      arguments: fondoOn,
-    );
+  void _getRangeApi(BuildContext context) async {
+    final newRange = await Navigator.of(context).pushNamed(RouteGenerator.inputRange);
     if (newRange != null) {
       var range = newRange as DateTimeRange;
       //String from = DateFormat('yyyy-MM-dd').format(range.start);
       //String to = DateFormat('yyyy-MM-dd').format(range.end);
       String from = FechaUtil.dateToString(date: range.start, formato: 'yyyy-MM-dd');
       String to = FechaUtil.dateToString(date: range.end, formato: 'yyyy-MM-dd');
-
       setState(() {
         loading = true;
         msgLoading = 'Conectando...';
@@ -298,31 +258,66 @@ class _PageFondoState extends State<PageFondo> {
       final getDateApiRange = await apiService
           .getDataApiRange(fondoOn.isin, to, from)
           ?.whenComplete(() => setState(() => msgLoading = 'Descargando datos...'));
-      //print(getDateApiRange?.length);
+      //final getDateApiRange = await apiService.getDataApiRange(fondoOn.isin, to, from);
       var newListValores = <Valor>[];
       if (getDateApiRange != null) {
         for (var dataApi in getDateApiRange) {
           newListValores.add(Valor(date: dataApi.epochSecs, precio: dataApi.price));
         }
-
         await _db
             .insertListVL(carteraOn, fondoOn, newListValores)
-            .whenComplete(() => setState(() => msgLoading = 'Escribiendo datos...'));
-        await _updateValores();
+            .whenComplete(() => setState(() => msgLoading = 'Almacenando datos...'));
 
-        setState(() {
+        //await _updateValores();
+        /*setState(() {
           loading = false;
           msgLoading = '';
-        });
+        });*/
+        _compareLastValor();
       } else {
         setState(() => loading = false);
+        _showMsg(msg: 'Error en la descarga de datos.', color: Colors.red);
         print('ERROR GET DATA API RANGE');
       }
     }
   }
 
+  Future<bool> _compareLastValor() async {
+    await _db.getValoresByOrder(carteraOn, fondoOn);
+    var valores = _db.dbValoresByOrder;
+    if (valores.isNotEmpty) {
+      var lastValor = Valor(date: valores.first.date, precio: valores.first.precio);
+      var lastPrecio = valores.first.precio;
+      var lastDate = valores.first.date;
+      if (fondoOn.lastDate == null) {
+        fondoOn
+          ..lastPrecio = lastPrecio
+          ..lastDate = lastDate;
+        _db.insertDataApi(carteraOn, fondoOn, lastPrecio: lastPrecio, lastDate: lastDate);
+        _db.insertVL(carteraOn, fondoOn, lastValor);
+        _updateValores();
+        return true;
+      } else if (fondoOn.lastDate! < lastDate) {
+        fondoOn
+          ..lastPrecio = lastPrecio
+          ..lastDate = lastDate;
+        _db.insertDataApi(carteraOn, fondoOn, lastPrecio: lastPrecio, lastDate: lastDate);
+        _db.insertVL(carteraOn, fondoOn, lastValor);
+        _updateValores();
+        return true;
+      } else {
+        _updateValores();
+        return false;
+      }
+    }
+    _updateValores();
+    return false;
+
+    //if(valores.first.date < fondoOn.lastDate){         }
+  }
+
   void _deleteConfirm(BuildContext context) {
-    if (valores.isEmpty) {
+    if (_db.dbValoresByOrder.isEmpty) {
       _showMsg(msg: 'Nada que eliminar');
     } else {
       showDialog(
@@ -345,7 +340,7 @@ class _PageFondoState extends State<PageFondo> {
                   ),
                   onPressed: () async {
                     await _db.deleteAllValoresInFondo(carteraOn, fondoOn);
-                    await _updateValores();
+                    _updateValores();
                     Navigator.of(context).pop();
                   },
                 ),
@@ -355,10 +350,7 @@ class _PageFondoState extends State<PageFondo> {
     }
   }
 
-  void _showMsg({
-    required String msg,
-    MaterialColor color = Colors.grey,
-  }) {
+  void _showMsg({required String msg, MaterialColor color = Colors.grey}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(msg), backgroundColor: color),
     );

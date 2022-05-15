@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'models/cartera.dart';
-import 'models/fondo.dart';
+//import 'models/cartera.dart';
+//import 'models/fondo.dart';
 import 'pages/page_about.dart';
 import 'pages/page_cartera.dart';
 import 'pages/page_fondo.dart';
@@ -22,7 +22,7 @@ class RouteGenerator {
   static const String aboutPage = '/about';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
-    final args = settings.arguments;
+    //final args = settings.arguments;
 
     switch (settings.name) {
       case homePage:
@@ -45,9 +45,11 @@ class RouteGenerator {
       case searchFondo:
         return MaterialPageRoute(builder: (context) => const PageSearchFondo());
       case inputFondo:
-        return MaterialPageRoute(builder: (context) => PageInputFondo(cartera: args as Cartera));
+        //return MaterialPageRoute(builder: (context) => PageInputFondo(cartera: args as Cartera));
+        return MaterialPageRoute(builder: (context) => const PageInputFondo());
       case inputRange:
-        return MaterialPageRoute(builder: (context) => PageInputRange(fondo: args as Fondo));
+        //return MaterialPageRoute(builder: (context) => PageInputRange(fondo: args as Fondo));
+        return MaterialPageRoute(builder: (context) => const PageInputRange());
       case infoPage:
         return MaterialPageRoute(builder: (context) => const PageInfo());
       case aboutPage:
@@ -72,9 +74,9 @@ class RouteGenerator {
   }
 }
 
-class ScreenArguments {
+/*class ScreenArguments {
   final Cartera cartera;
   final Fondo fondo;
 
   ScreenArguments(this.cartera, this.fondo);
-}
+}*/

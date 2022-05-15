@@ -1,85 +1,16 @@
+import 'package:cartera_fondos/models/valor.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-//import 'package:intl/intl.dart';
 
 import '../models/carfoin_provider.dart';
-//import '../models/cartera.dart';
-//import '../models/fondo.dart';
-//import '../models/valor.dart';
-//import '../services/api_service.dart';
-//import '../services/sqlite.dart';
 import '../utils/fecha_util.dart';
-
-/*class MainFondo extends StatefulWidget {
-  //final Cartera cartera;
-  //final Fondo fondo;
-  //const MainFondo({Key? key, required this.cartera, required this.fondo}) : super(key: key);
-  const MainFondo({Key? key}) : super(key: key);
-
-  @override
-  State<MainFondo> createState() => _MainFondoState();
-}
-
-class _MainFondoState extends State<MainFondo> {*/
 
 class MainFondo extends StatelessWidget {
   const MainFondo({Key? key}) : super(key: key);
-  //late Cartera carteraOn;
-  //late Fondo fondoOn;
-  //late List<Valor> valoresOn;
-
-  //late Sqlite _db;
-  //late ApiService apiService;
-  //var valores = <Valor>[];
-  //var valoresByOrder = <Valor>[];
-  //var valoresCopy = <Valor>[];
-  //bool loading = true;
-  //String msgLoading = '';
-
-  /*@override
-  void initState() {
-    carteraOn = context.read<CarfoinProvider>().getCartera!;
-    fondoOn = context.read<CarfoinProvider>().getFondo!;
-    valoresOn = context.read<CarfoinProvider>().getValores;
-    */ /*loading = true;
-    msgLoading = 'Abriendo base de datos...';
-    _db = Sqlite();
-    _db.openDb().whenComplete(() async {
-      await _updateValores();
-    });
-    apiService = ApiService();*/ /*
-    super.initState();
-  }*/
-
-  /*_updateValores() async {
-    setState(() {
-      valores = <Valor>[];
-      valoresByOrder = <Valor>[];
-      valoresCopy = <Valor>[];
-    });
-
-    await _db.createTableFondo(widget.cartera, widget.fondo);
-    setState(() => msgLoading = 'Obteniendo datos...');
-    //TODO: check si data no es null ??
-    await _db.getValoresByOrder(widget.cartera, widget.fondo).whenComplete(() => setState(() {
-          loading = false;
-          msgLoading = '';
-          valores = _db.dbValoresByOrder; // ???
-          valoresByOrder = _db.dbValoresByOrder;
-          valoresCopy = [...valores];
-        }));
-    //TODO: si moneda, lastPrecio y LastDate == null hacer un update
-    if (widget.fondo.moneda == null) {}
-    //TODO: ordenar primero por date para obtener valores.last si valores.isNotEmpty ??
-  }*/
 
   @override
   Widget build(BuildContext context) {
     //TODO: PROVIDER carfoin ????
-    //final carfoin = Provider.of<CarfoinProvider>(context);
-    //final fondoOn = carfoin.getFondo;
-    //final valoresOn = carfoin.getValores;
-    //final carteraOn = context.read<CarfoinProvider>().getCartera;
     final fondoOn = context.read<CarfoinProvider>().getFondo!;
     final valoresOn = context.read<CarfoinProvider>().getValores;
 
@@ -131,7 +62,6 @@ class MainFondo extends StatelessWidget {
                     ? const Text('Descarga el último valor liquidativo')
                     : Center(
                         child: Text(
-                          //valores.isNotEmpty ? _epochFormat(valores.first.date) : '',
                           valoresOn.isNotEmpty ? FechaUtil.epochToString(valoresOn.first.date) : '',
                           style: Theme.of(context).textTheme.titleMedium,
                         ),

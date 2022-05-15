@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
-import '../models/cartera.dart';
+import '../models/carfoin_provider.dart';
+//import '../models/cartera.dart';
 import '../models/fondo.dart';
 import '../services/api_service.dart';
 
 class PageInputFondo extends StatefulWidget {
-  final Cartera cartera;
-  const PageInputFondo({Key? key, required this.cartera}) : super(key: key);
+  //final Cartera cartera;
+  //const PageInputFondo({Key? key, required this.cartera}) : super(key: key);
+  const PageInputFondo({Key? key}) : super(key: key);
 
   @override
   State<PageInputFondo> createState() => _PageInputFondoState();
@@ -39,6 +42,8 @@ class _PageInputFondoState extends State<PageInputFondo> {
 
   @override
   Widget build(BuildContext context) {
+    var carteraOn = context.read<CarfoinProvider>().getCartera!;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Añadir Fondo'),
@@ -51,7 +56,7 @@ class _PageInputFondoState extends State<PageInputFondo> {
               children: [
                 ListTile(
                   leading: const Icon(Icons.business_center),
-                  title: Text(widget.cartera.name),
+                  title: Text(carteraOn.name),
                   subtitle: const Text('Introduce el ISIN del nuevo Fondo'),
                 ),
                 ListTile(

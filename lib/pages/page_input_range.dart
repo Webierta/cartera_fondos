@@ -1,24 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
-import '../models/fondo.dart';
+import '../models/carfoin_provider.dart';
 
 class PageInputRange extends StatefulWidget {
-  final Fondo fondo;
-  const PageInputRange({Key? key, required this.fondo}) : super(key: key);
+  const PageInputRange({Key? key}) : super(key: key);
 
   @override
   State<PageInputRange> createState() => _PageInputRangeState();
 }
 
 class _PageInputRangeState extends State<PageInputRange> {
-  var _dateRange = DateTimeRange(
+  final _initDateRange = DateTimeRange(
     start: DateTime.now().subtract(const Duration(days: 5)),
     end: DateTime.now(),
   );
 
+  DateTimeRange? _dateRange;
+
   @override
   Widget build(BuildContext context) {
+    final fondoOn = context.read<CarfoinProvider>().getFondo!;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Descarga valores')),
       body: ListView(
@@ -30,14 +34,17 @@ class _PageInputRangeState extends State<PageInputRange> {
               children: [
                 ListTile(
                   leading: const Icon(Icons.assessment),
-                  title: Text(widget.fondo.name),
-                  subtitle: const Text('Selecciona un intervalo de tiempo:'),
+                  title: Text(fondoOn.name),
+                  subtitle: const Text('Selecciona un intervalo de fechas:'),
                 ),
                 const SizedBox(height: 10),
                 ListTile(
                   title: InkWell(
                     onTap: () async {
-                      await _datePicker(context, DatePickerEntryMode.inputOnly);
+                      var newRange = await _datePicker(context, DatePickerEntryMode.inputOnly);
+                      if (newRange != null) {
+                        setState(() => _dateRange = newRange);
+                      }
                     },
                     child: InputDecorator(
                       decoration: const InputDecoration(
@@ -50,8 +57,8 @@ class _PageInputRangeState extends State<PageInputRange> {
                           //crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              '${DateFormat('dd/MM/yyyy').format(_dateRange.start)} - '
-                              '${DateFormat('dd/MM/yyyy').format(_dateRange.end)}',
+                              '${DateFormat('dd/MM/yyyy').format(_dateRange?.start ?? _initDateRange.start)} - '
+                              '${DateFormat('dd/MM/yyyy').format(_dateRange?.end ?? _initDateRange.end)}',
                             ),
                             const Icon(Icons.arrow_drop_down, color: Colors.blue),
                           ],
@@ -61,24 +68,31 @@ class _PageInputRangeState extends State<PageInputRange> {
                   ),
                   trailing: IconButton(
                     icon: const Icon(Icons.date_range, color: Colors.blue),
-                    onPressed: () {
-                      _datePicker(context, DatePickerEntryMode.calendarOnly);
+                    onPressed: () async {
+                      var newRange = await _datePicker(context, DatePickerEntryMode.calendarOnly);
+                      if (newRange != null) {
+                        setState(() => _dateRange = newRange);
+                      }
                     },
                   ),
                   subtitle: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       TextButton(
-                        child: const Text('Cancelar'),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
+                        child: const Text('CANCELAR'),
+                        onPressed: () => Navigator.of(context).pop(),
                       ),
                       TextButton(
-                        child: const Text('Aceptar'),
+                        child: const Text('ACEPTAR'),
                         onPressed: () {
-                          var range = DateTimeRange(start: _dateRange.start, end: _dateRange.end);
-                          Navigator.pop(context, range);
+                          if (_dateRange != null) {
+                            var range =
+                                DateTimeRange(start: _dateRange!.start, end: _dateRange!.end);
+                            Navigator.pop(context, range);
+                          } else {
+                            var range = _initDateRange;
+                            Navigator.pop(context, range);
+                          }
                         },
                       ),
                     ],
@@ -98,8 +112,8 @@ class _PageInputRangeState extends State<PageInputRange> {
       initialDateRange: DateTimeRange(
         //start: DateTime.now().subtract(const Duration(days: 5)),
         //end: DateTime.now(),
-        start: _dateRange.start,
-        end: _dateRange.end,
+        start: _initDateRange.start,
+        end: _initDateRange.end,
       ),
       //firstDate: DateTime(2019),
       firstDate: DateTime(2018, 1, 1),
@@ -113,20 +127,19 @@ class _PageInputRangeState extends State<PageInputRange> {
       fieldEndLabelText: 'Hasta',
       fieldStartHintText: 'dd/mm/aaaa',
       fieldEndHintText: 'dd/mm/aaaa',
-      cancelText: 'Cancelar',
-      confirmText: 'OK',
-      saveText: 'Aceptar',
+      cancelText: 'CANCELAR',
+      confirmText: 'ACEPTAR',
+      saveText: 'ACEPTAR',
       errorFormatText: 'Formato no válido.',
       errorInvalidText: 'Fuera de rango.',
       errorInvalidRangeText: 'Período no válido.',
     );
 
-    if (newRange == null) {
+    return newRange;
+    /*if (newRange == null) {
       print('FECHAS NO SELECCIONADAS');
     } else {
-      setState(() {
-        _dateRange = newRange;
-      });
-    }
+      setState(() => _dateRange = newRange);
+    }*/
   }
 }

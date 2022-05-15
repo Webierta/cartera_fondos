@@ -204,6 +204,8 @@ class Sqlite {
 
   Future<void> deleteCarteraInCarteras(Cartera cartera) async {
     await openDb();
+    //get all fondos de cartera y delete
+
     await _db.delete(table, where: '$columnName = ?', whereArgs: [cartera.name]);
   }
 

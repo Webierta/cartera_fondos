@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:provider/provider.dart';
@@ -13,8 +14,6 @@ import '../services/sqlite.dart';
 enum MenuCartera { ordenar, eliminar }
 
 class PageCartera extends StatefulWidget {
-  //final Cartera cartera;
-  //const PageCartera({Key? key, required this.cartera}) : super(key: key);
   const PageCartera({Key? key}) : super(key: key);
 
   @override
@@ -32,14 +31,10 @@ class _PageCarteraState extends State<PageCartera> {
 
   @override
   void initState() {
-    /*WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
-      var carfoin = Provider.of<CarfoinProvider>(context, listen: false);
-      carteraOn = carfoin.getCartera!;
-    });*/
     carteraOn = context.read<CarfoinProvider>().getCartera!;
     _db = Sqlite();
-    _db.openDb().whenComplete(() async {
-      await _updateFondos();
+    _db.openDb().whenComplete(() {
+      _updateFondos();
     });
     apiService = ApiService();
     super.initState();
@@ -56,36 +51,17 @@ class _PageCarteraState extends State<PageCartera> {
 
   _getValoresFondo(Fondo fondo) async {
     await _db.getValoresByOrder(carteraOn, fondo);
-    setState(() => fondo.addValores(_db.dbValoresByOrder));
+    // TODO: setstate necesario????
+    //setState(() => fondo.addValores(_db.dbValoresByOrder));
+    fondo.addValores(_db.dbValoresByOrder);
   }
 
-  double? _getLastPrecio(Fondo fondo) {
-    if (fondo.historico.isNotEmpty) {
-      return fondo.historico.first.precio;
-    }
-    return null;
-  }
-
-  double? _getDiferencia(Fondo fondo) {
-    if (fondo.historico.length > 1) {
-      var last = fondo.historico.first.precio;
-      var prev = fondo.historico[1].precio;
-      return last - prev;
-    }
-    return null;
-  }
-
-  final Map<String, IconData> mapItemMenu = {
-    MenuCartera.ordenar.name: Icons.sort_by_alpha,
-    MenuCartera.eliminar.name: Icons.delete_forever,
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    //final carteraOn = Provider.of<CarfoinProvider>(context);
-    final carfoin = Provider.of<CarfoinProvider>(context);
-
-    List<Column> listItemMenu = [
+  List<Column> _buildListMenu(BuildContext context) {
+    final Map<String, IconData> mapItemMenu = {
+      MenuCartera.ordenar.name: Icons.sort_by_alpha,
+      MenuCartera.eliminar.name: Icons.delete_forever,
+    };
+    return [
       for (var item in mapItemMenu.entries)
         Column(children: [
           ListTile(
@@ -97,13 +73,17 @@ class _PageCarteraState extends State<PageCartera> {
           ),
         ]),
     ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final carfoin = Provider.of<CarfoinProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () async {
-            //await _updateFondos(); // TODO: ELIMINADO Y ACTUALIZA AL VOLVER ??
             ScaffoldMessenger.of(context).removeCurrentSnackBar();
             Navigator.of(context).pushNamed(RouteGenerator.homePage);
           },
@@ -111,36 +91,40 @@ class _PageCarteraState extends State<PageCartera> {
         title: Text(carteraOn.name),
         actions: [
           IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: () async {
-                await refreshAll();
-                //await _updateFondos();
-              }),
+            icon: const Icon(Icons.refresh),
+            onPressed: () => _refreshAll(context),
+          ),
           PopupMenuButton(
               color: Colors.blue,
               offset: Offset(0.0, AppBar().preferredSize.height),
               shape: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(Radius.circular(8.0)),
               ),
-              itemBuilder: (ctx) => [
-                    for (var item in listItemMenu)
-                      PopupMenuItem(
-                        value: MenuCartera.values[listItemMenu.indexOf(item)],
-                        child: item,
-                      )
-                  ],
+              itemBuilder: (ctx) {
+                var listItemMenu = _buildListMenu(context);
+                return [
+                  for (var item in listItemMenu)
+                    PopupMenuItem(
+                      value: MenuCartera.values[listItemMenu.indexOf(item)],
+                      child: item,
+                    )
+                ];
+              },
               onSelected: (MenuCartera item) async {
                 if (item == MenuCartera.ordenar) {
                   var fondosSort = <Fondo>[];
                   fondosSort = [...fondos];
                   fondosSort.sort((a, b) => a.name.compareTo(b.name));
-                  _db.deleteAllFondosInCartera(carteraOn);
-                  for (var fondo in fondosSort) {
-                    _db.insertFondo(carteraOn, fondo);
+                  if (listEquals(fondos, fondosSort)) {
+                    _showMsg(msg: 'Nada que hacer: Los fondos ya están ordenados por nombre.');
+                  } else {
+                    _db.deleteAllFondosInCartera(carteraOn);
+                    for (var fondo in fondosSort) {
+                      _db.insertFondo(carteraOn, fondo);
+                    }
+                    _updateFondos();
                   }
-                  _updateFondos();
                 } else if (item == MenuCartera.eliminar) {
-                  //print(cartera.name);
                   _deleteAllConfirm(context);
                 }
               }),
@@ -186,32 +170,26 @@ class _PageCarteraState extends State<PageCartera> {
                               title: Text(fondos[index].name),
                               subtitle: Text(fondos[index].isin),
                               trailing: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text('${_getLastPrecio(fondos[index]) ?? ''}'),
-                                  _getDiferencia(fondos[index]) != null
-                                      ? Text(
-                                          _getDiferencia(fondos[index])!.toStringAsFixed(2),
-                                          style: TextStyle(
-                                            color: _getDiferencia(fondos[index])! < 0
-                                                ? Colors.red
-                                                : Colors.green,
-                                          ),
-                                        )
-                                      : const Text(''),
+                                  Text(
+                                    '${_getLastPrecio(fondos[index]) ?? ''}',
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  if (_getDiferencia(fondos[index]) != null)
+                                    Text(
+                                      _getDiferencia(fondos[index])!.toStringAsFixed(2),
+                                      style: TextStyle(
+                                        color: _getDiferencia(fondos[index])! < 0
+                                            ? Colors.red
+                                            : Colors.green,
+                                      ),
+                                    ),
                                 ],
                               ),
                               onTap: () {
                                 ScaffoldMessenger.of(context).removeCurrentSnackBar();
-                                //carteraOn.setCartera = carteras[index];
-                                /*Navigator.of(context).pushNamed(
-                                  RouteGenerator.fondoPage,
-                                  arguments: ScreenArguments(carteraOn, fondos[index]),
-                                );*/
                                 carfoin.setFondo = fondos[index];
-                                /*Navigator.of(context).pushNamed(
-                                  RouteGenerator.fondoPage,
-                                  arguments: ScreenArguments(carteraOn, carfoin.getFondo!),
-                                );*/
                                 Navigator.of(context).pushNamed(RouteGenerator.fondoPage);
                               },
                             ),
@@ -249,7 +227,9 @@ class _PageCarteraState extends State<PageCartera> {
         },
       ),
       floatingActionButton: SpeedDial(
-        animatedIcon: AnimatedIcons.menu_close,
+        //animatedIcon: AnimatedIcons.menu_close,
+        //activeIcon: Icons.add_chart,
+        //animatedIcon: AnimatedIcons.menu_close,
         icon: Icons.addchart,
         spacing: 8,
         spaceBetweenChildren: 4,
@@ -257,20 +237,16 @@ class _PageCarteraState extends State<PageCartera> {
         overlayOpacity: 0.2,
         children: [
           SpeedDialChild(
-            child: const Icon(Icons.search, color: Colors.white),
+            child: const Icon(Icons.search),
             label: 'Buscar online por ISIN',
             backgroundColor: Colors.blue,
+            foregroundColor: Colors.white,
             onTap: () async {
               ScaffoldMessenger.of(context).removeCurrentSnackBar();
-              final newFondo = await Navigator.of(context).pushNamed(
-                RouteGenerator.inputFondo,
-                arguments: carteraOn,
-              );
-              if (newFondo != null) {
-                addFondo(newFondo as Fondo);
-              } else {
-                _showMsg(msg: 'Sin cambios en la cartera.');
-              }
+              final newFondo = await Navigator.of(context).pushNamed(RouteGenerator.inputFondo);
+              newFondo != null
+                  ? _addFondo(newFondo as Fondo)
+                  : _showMsg(msg: 'Sin cambios en la cartera.');
             },
           ),
           SpeedDialChild(
@@ -281,11 +257,9 @@ class _PageCarteraState extends State<PageCartera> {
             onTap: () async {
               ScaffoldMessenger.of(context).removeCurrentSnackBar();
               final newFondo = await Navigator.of(context).pushNamed(RouteGenerator.searchFondo);
-              if (newFondo != null) {
-                addFondo(newFondo as Fondo);
-              } else {
-                _showMsg(msg: 'Sin cambios en la cartera.');
-              }
+              newFondo != null
+                  ? _addFondo(newFondo as Fondo)
+                  : _showMsg(msg: 'Sin cambios en la cartera.');
             },
           ),
         ],
@@ -293,8 +267,24 @@ class _PageCarteraState extends State<PageCartera> {
     );
   }
 
-  addFondo(Fondo newFondo) async {
-    var existe = [for (var fondo in fondos) fondo.isin].contains(newFondo.isin);
+  double? _getLastPrecio(Fondo fondo) {
+    if (fondo.historico.isNotEmpty) {
+      return fondo.historico.first.precio;
+    }
+    return null;
+  }
+
+  double? _getDiferencia(Fondo fondo) {
+    if (fondo.historico.length > 1) {
+      var last = fondo.historico.first.precio;
+      var prev = fondo.historico[1].precio;
+      return last - prev;
+    }
+    return null;
+  }
+
+  _addFondo(Fondo newFondo) async {
+    var existe = [for (var fondo in _db.dbFondos) fondo.isin].contains(newFondo.isin);
     if (existe) {
       _showMsg(
         msg: 'El fondo con ISIN ${newFondo.isin} ya existe en esta cartera.',
@@ -307,7 +297,7 @@ class _PageCarteraState extends State<PageCartera> {
     }
   }
 
-  refreshAll() async {
+  _refreshAll(BuildContext context) async {
     var mapResultados = <String, Icon>{};
     setState(() {
       _isUpdating = true;
@@ -316,7 +306,7 @@ class _PageCarteraState extends State<PageCartera> {
     await _db.getFondos(carteraOn);
     if (_db.dbFondos.isNotEmpty) {
       for (var fondo in _db.dbFondos) {
-        setState(() => _msgUpdating = 'Actualizando ${fondo.name}...');
+        setState(() => _msgUpdating = 'Actualizando...\n${fondo.name}');
         //TODO: NECESARIO ?
         await _db.createTableFondo(carteraOn, fondo);
         final getDataApi = await apiService.getDataApi(fondo.isin);
@@ -325,28 +315,26 @@ class _PageCarteraState extends State<PageCartera> {
           var newMoneda = getDataApi.market;
           var newLastPrecio = getDataApi.price;
           var newLastDate = getDataApi.epochSecs;
-          setState(() {
-            //fondo.moneda = newMoneda;
-            //fondo.lastPrecio = newLastPrecio;
-            //fondo.lastDate = newLastDate;
-            fondo
-              ..moneda = newMoneda
-              ..lastPrecio = newLastPrecio
-              ..lastDate = newLastDate;
-          });
+          //setState(() {
+          fondo
+            ..moneda = newMoneda
+            ..lastPrecio = newLastPrecio
+            ..lastDate = newLastDate;
+          //});
           await _db.insertDataApi(carteraOn, fondo,
               moneda: newMoneda, lastPrecio: newLastPrecio, lastDate: newLastDate);
           await _db.insertVL(carteraOn, fondo, newValor);
           mapResultados[fondo.name] = const Icon(Icons.check_box, color: Colors.green);
         } else {
+          mapResultados[fondo.name] = const Icon(Icons.disabled_by_default, color: Colors.red);
           //_showMsg(msg: 'Error al actualizar el fondo ${fondo.name}');  ???
+          // ESTO SE VE ALGUNA VEZ ??
           setState(() {
             _msgUpdating = 'Error al actualizar el fondo ${fondo.name}';
           });
-          mapResultados[fondo.name] = const Icon(Icons.disabled_by_default, color: Colors.red);
         }
       }
-      await _updateFondos();
+      _updateFondos();
       setState(() {
         _isUpdating = false;
         _msgUpdating = '';
@@ -388,7 +376,7 @@ class _PageCarteraState extends State<PageCartera> {
   }
 
   void _deleteAllConfirm(BuildContext context) {
-    if (fondos.isEmpty) {
+    if (_db.dbFondos.isEmpty) {
       _showMsg(msg: 'Nada que eliminar');
     } else {
       showDialog(
@@ -411,11 +399,11 @@ class _PageCarteraState extends State<PageCartera> {
                     //textStyle: const TextStyle(color: Colors.white),
                   ),
                   onPressed: () async {
-                    for (var fondo in fondos) {
+                    for (var fondo in _db.dbFondos) {
                       await _db.deleteAllValoresInFondo(carteraOn, fondo);
                       await _db.deleteFondoInCartera(carteraOn, fondo);
                     }
-                    await _updateFondos();
+                    _updateFondos();
                     Navigator.of(context).pop();
                   },
                 ),

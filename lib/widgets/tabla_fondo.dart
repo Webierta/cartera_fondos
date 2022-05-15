@@ -17,47 +17,49 @@ class TablaFondo extends StatefulWidget {
 //TODO OBTENER VALORES DESDE AQUI??
 
 class _TablaFondoState extends State<TablaFondo> {
-  var valoresOn = <Valor>[];
+  //var valoresOn = <Valor>[];
   bool _isSortDesc = true;
 
-  @override
+  /*@override
   void initState() {
     //final valoresOn = context.read<CarfoinProvider>().getValores;
     //valoresCopy = [...valoresOn];
     valoresOn = context.read<CarfoinProvider>().getValores;
     super.initState();
-  }
-
-  _changeSort() {
-    //setState(() {
-    if (!_isSortDesc) {
-      valoresOn.sort((a, b) => b.date.compareTo(a.date));
-    } else {
-      valoresOn.sort((a, b) => a.date.compareTo(b.date));
-    }
-    setState(() => _isSortDesc = !_isSortDesc);
-    //});
-  }
-
-  Text _diferencia(Valor valor) {
-    int index = _isSortDesc ? 1 : -1;
-    bool condition = _isSortDesc
-        ? valoresOn.length > (valoresOn.indexOf(valor) + 1)
-        : valoresOn.length > (valoresOn.indexOf(valor) - 1) && valoresOn.indexOf(valor) > 0;
-
-    if (condition) {
-      var dif = valor.precio - valoresOn[valoresOn.indexOf(valor) + index].precio;
-      return Text(
-        dif.toStringAsFixed(2),
-        textAlign: TextAlign.center,
-        style: TextStyle(color: dif < 0 ? Colors.red : Colors.green),
-      );
-    }
-    return const Text('');
-  }
+  }*/
 
   @override
   Widget build(BuildContext context) {
+    final valoresOn = context.read<CarfoinProvider>().getValores;
+
+    _changeSort() {
+      //setState(() {
+      if (!_isSortDesc) {
+        valoresOn.sort((a, b) => b.date.compareTo(a.date));
+      } else {
+        valoresOn.sort((a, b) => a.date.compareTo(b.date));
+      }
+      setState(() => _isSortDesc = !_isSortDesc);
+      //});
+    }
+
+    Text _diferencia(Valor valor) {
+      int index = _isSortDesc ? 1 : -1;
+      bool condition = _isSortDesc
+          ? valoresOn.length > (valoresOn.indexOf(valor) + 1)
+          : valoresOn.length > (valoresOn.indexOf(valor) - 1) && valoresOn.indexOf(valor) > 0;
+
+      if (condition) {
+        var dif = valor.precio - valoresOn[valoresOn.indexOf(valor) + index].precio;
+        return Text(
+          dif.toStringAsFixed(2),
+          textAlign: TextAlign.center,
+          style: TextStyle(color: dif < 0 ? Colors.red : Colors.green),
+        );
+      }
+      return const Text('');
+    }
+
     //final valoresCopy = context.read<CarfoinProvider>().getValores;
     return valoresOn.isEmpty
         ? const Center(child: Text('Sin datos'))
@@ -111,7 +113,7 @@ class _TablaFondoState extends State<TablaFondo> {
                         Expanded(
                             flex: 1,
                             child: Text(
-                              _isSortDesc ? '${valoresOn.length - index}' : '$index',
+                              _isSortDesc ? '${valoresOn.length - index}' : '${index + 1}',
                               textAlign: TextAlign.center,
                             )),
                         Expanded(

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-//import 'package:intl/intl.dart';
 
 import '../models/carfoin_provider.dart';
-//import '../models/valor.dart';
 import '../utils/fecha_util.dart';
 
 class GraficoChart extends StatelessWidget {
@@ -14,12 +13,13 @@ class GraficoChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final carfoin = Provider.of<CarfoinProvider>(context);
+    //final carfoin = Provider.of<CarfoinProvider>(context);
     //final valores = carfoin.getValores;
     final valores = context.read<CarfoinProvider>().getValores;
 
     final List<double> precios = valores.reversed.map((entry) => entry.precio).toList();
     final List<int> fechas = valores.reversed.map((entry) => entry.date).toList();
+
     double precioMedio = 0;
     double precioMax = 0;
     double precioMin = 0;
@@ -52,13 +52,16 @@ class GraficoChart extends StatelessWidget {
           spots: spots,
           color: Colors.blue,
           barWidth: 2,
-          isCurved: true,
+          isCurved: false,
           dotData: FlDotData(show: true),
           belowBarData: BarAreaData(show: true, color: Colors.blue.withOpacity(0.5)),
         ),
       ],
       minY: precioMin.floor().toDouble(),
+      //minY: ((((precioMin - precioMin.truncate()) * 10).floor()) / 10) + precioMin.floor(),
+      // TODO: REVISAR
       maxY: precioMax.ceil().toDouble(),
+      //maxY: (((((precioMax - precioMax.truncate()) * 10).floor()) / 10) + precioMax.floor()).ceilToDouble(),
       lineTouchData: LineTouchData(
         touchTooltipData: LineTouchTooltipData(
           tooltipBgColor: Colors.black, // red.withOpacity(0.8),
