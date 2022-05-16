@@ -2,6 +2,7 @@ import 'package:cartera_fondos/models/valor.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../routes.dart';
 import '../models/carfoin_provider.dart';
 import '../utils/fecha_util.dart';
 
@@ -103,7 +104,9 @@ class MainFondo extends StatelessWidget {
                   // TODO: nueva ventana con Fecha / participaciones y VL
                   trailing: IconButton(
                     icon: const Icon(Icons.shopping_cart, color: Colors.blue),
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.of(context).pushNamed(RouteGenerator.mercadoPage);
+                    },
                   ),
                 ),
                 const SizedBox(height: 10),

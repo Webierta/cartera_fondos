@@ -1,5 +1,3 @@
-//import 'package:flutter/material.dart';
-
 import 'valor.dart';
 
 class Fondo {

@@ -1,5 +1,3 @@
-//import 'package:intl/intl.dart';
-
 class Valor {
   final int date;
   final double precio;
@@ -49,4 +47,12 @@ class Valor {
   removeValor() {}
 
   exportarValores() {}
+
+/*double _getRentabilidad() {
+    return rentabilidad;
+  }
+
+  double _getTae() {
+    return tae;
+  }*/
 }

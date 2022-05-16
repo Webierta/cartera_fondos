@@ -20,6 +20,11 @@ class Sqlite {
   // TABLE FONDO
   static const columnDate = 'date';
   static const columnPrecio = 'precio';
+  //TABLE MERCADO
+  static const columnTipo = 'tipo';
+  static const columnDateMercado = 'date';
+  static const columnParticipaciones = 'participaciones';
+  static const columnPrecioMercado = 'precio';
 
   final AsyncMemoizer _memoizer = AsyncMemoizer();
   late Database _db;
@@ -97,6 +102,19 @@ class Sqlite {
       CREATE TABLE IF NOT EXISTS $nameTable (
         $columnDate INTEGER PRIMARY KEY,
         $columnPrecio REAL NOT NULL)
+      ''');
+  }
+
+  Future<void> createTableMercado(Cartera cartera, Fondo fondo) async {
+    await openDb();
+    var nameTable = fondo.isin + '_' + cartera.name;
+    await _db.execute('''
+      CREATE TABLE IF NO EXISTS $nameTable (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        $columnTipo INTEGER,
+        $columnDateMercado INTEGER,
+        $columnParticipaciones INTEGER,
+        $columnPrecioMercado REAL)
       ''');
   }
 
