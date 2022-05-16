@@ -11,6 +11,7 @@ class MainFondo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     //TODO: PROVIDER carfoin ????
+    final carteraOn = context.read<CarfoinProvider>().getCartera;
     final fondoOn = context.read<CarfoinProvider>().getFondo!;
     final valoresOn = context.read<CarfoinProvider>().getValores;
 
@@ -35,9 +36,19 @@ class MainFondo extends StatelessWidget {
               fondoOn.name,
               style: Theme.of(context).textTheme.titleLarge,
             ),
-            subtitle: Text(
-              fondoOn.isin,
-              style: Theme.of(context).textTheme.titleMedium,
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  fondoOn.isin,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                Chip(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  avatar: const Icon(Icons.business_center),
+                  label: Text(carteraOn!.name),
+                ),
+              ],
             ),
           ),
         ),

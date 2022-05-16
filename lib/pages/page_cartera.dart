@@ -33,8 +33,8 @@ class _PageCarteraState extends State<PageCartera> {
   void initState() {
     carteraOn = context.read<CarfoinProvider>().getCartera!;
     _db = Sqlite();
-    _db.openDb().whenComplete(() {
-      _updateFondos();
+    _db.openDb().whenComplete(() async {
+      await _updateFondos();
     });
     apiService = ApiService();
     super.initState();
@@ -42,6 +42,7 @@ class _PageCarteraState extends State<PageCartera> {
 
   _updateFondos() async {
     await _db.getFondos(carteraOn);
+    //setState(() => fondos = _db.dbFondos);
     for (var fondo in _db.dbFondos) {
       await _db.createTableFondo(carteraOn, fondo);
       await _getValoresFondo(fondo);
@@ -83,7 +84,7 @@ class _PageCarteraState extends State<PageCartera> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () async {
+          onPressed: () {
             ScaffoldMessenger.of(context).removeCurrentSnackBar();
             Navigator.of(context).pushNamed(RouteGenerator.homePage);
           },
@@ -203,10 +204,10 @@ class _PageCarteraState extends State<PageCartera> {
                               child: Icon(Icons.delete, color: Colors.white),
                             ),
                           ),
-                          onDismissed: (_) {
+                          onDismissed: (_) async {
                             _db.deleteAllValoresInFondo(carteraOn, fondos[index]);
                             _db.deleteFondoInCartera(carteraOn, fondos[index]);
-                            _updateFondos();
+                            await _updateFondos();
                           },
                         );
                       },
@@ -292,7 +293,7 @@ class _PageCarteraState extends State<PageCartera> {
       );
     } else {
       await _db.insertFondo(carteraOn, newFondo);
-      _updateFondos();
+      await _updateFondos();
       _showMsg(msg: 'Fondo añadido');
     }
   }
@@ -334,7 +335,7 @@ class _PageCarteraState extends State<PageCartera> {
           });
         }
       }
-      _updateFondos();
+      await _updateFondos();
       setState(() {
         _isUpdating = false;
         _msgUpdating = '';
@@ -403,7 +404,7 @@ class _PageCarteraState extends State<PageCartera> {
                       await _db.deleteAllValoresInFondo(carteraOn, fondo);
                       await _db.deleteFondoInCartera(carteraOn, fondo);
                     }
-                    _updateFondos();
+                    await _updateFondos();
                     Navigator.of(context).pop();
                   },
                 ),

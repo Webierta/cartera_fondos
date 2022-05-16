@@ -10,7 +10,7 @@ import '../routes.dart';
 import '../services/sqlite.dart';
 import '../widgets/my_drawer.dart';
 
-enum Menu { ordenar, exportar, eliminar }
+enum Menu { renombrar, ordenar, exportar, eliminar }
 
 class PageHome extends StatefulWidget {
   const PageHome({Key? key}) : super(key: key);
@@ -57,6 +57,7 @@ class _PageHomeState extends State<PageHome> {
 
   List<Column> _buildListItem(BuildContext context) {
     final Map<String, IconData> mapItemMenu = {
+      Menu.renombrar.name: Icons.edit,
       Menu.ordenar.name: Icons.sort_by_alpha,
       Menu.exportar.name: Icons.save,
       Menu.eliminar.name: Icons.delete_forever,
@@ -104,7 +105,9 @@ class _PageHomeState extends State<PageHome> {
             },
             onSelected: (Menu item) async {
               //TODO: ACCIONES PENDIENTES
-              if (item == Menu.ordenar) {
+              if (item == Menu.renombrar) {
+                print('RENAME');
+              } else if (item == Menu.ordenar) {
                 var carterasSort = <Cartera>[];
                 carterasSort = [...carteras];
                 carterasSort.sort((a, b) => a.name.compareTo(b.name));
@@ -152,7 +155,7 @@ class _PageHomeState extends State<PageHome> {
                           direction: DismissDirection.endToStart,
                           child: Card(
                             child: ListTile(
-                              leading: const Icon(Icons.business_center_sharp, size: 32),
+                              leading: const Icon(Icons.business_center, size: 32),
                               title: Text(carteras[index].name),
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,

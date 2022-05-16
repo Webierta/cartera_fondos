@@ -114,7 +114,8 @@ class Sqlite {
       {String? moneda, double? lastPrecio, int? lastDate}) async {
     await openDb();
     await _db.insert(cartera.name, fondo.toMapDataApi(),
-        conflictAlgorithm: ConflictAlgorithm.replace);
+        conflictAlgorithm: ConflictAlgorithm.ignore);
+    //TODO: ConflictAlgorithm.replace reordena los fondos y lo pone al final ??
   }
 
   Future<void> insertVL(Cartera cartera, Fondo fondo, Valor valor) async {
@@ -205,7 +206,6 @@ class Sqlite {
   Future<void> deleteCarteraInCarteras(Cartera cartera) async {
     await openDb();
     //get all fondos de cartera y delete
-
     await _db.delete(table, where: '$columnName = ?', whereArgs: [cartera.name]);
   }
 

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../models/carfoin_provider.dart';
@@ -25,6 +24,8 @@ class GraficoChart extends StatelessWidget {
     double precioMin = 0;
     String? fechaMax;
     String? fechaMin;
+    int epochMax = 0; // int? nullable
+    int epochMin = 0;
     if (precios.length > 1) {
       precioMedio = precios.reduce((a, b) => a + b) / precios.length;
       precioMax = precios.reduce((curr, next) => curr > next ? curr : next);
@@ -33,6 +34,8 @@ class GraficoChart extends StatelessWidget {
       //fechaMin = _epochFormat(fechas[precios.indexOf(precioMin)]);
       fechaMax = FechaUtil.epochToString(fechas[precios.indexOf(precioMax)]);
       fechaMin = FechaUtil.epochToString(fechas[precios.indexOf(precioMin)]);
+      epochMax = fechas[precios.indexOf(precioMax)];
+      epochMin = fechas[precios.indexOf(precioMin)];
     }
     /*int domainInterval(int epoch1, int epoch2) {
       var fecha1 = DateTime.fromMillisecondsSinceEpoch(epoch1 * 1000);
@@ -105,14 +108,22 @@ class GraficoChart extends StatelessWidget {
                 // if (value.toInt() % 10 != 0) {
                 //   return const Text('');
                 // }
-                return Text(value.toStringAsFixed(2), style: const TextStyle(fontSize: 8));
+                return FittedBox(
+                  child: Text(
+                    value.toStringAsFixed(2),
+                    style: const TextStyle(fontSize: 8),
+                  ),
+                );
               }),
         ),
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
             reservedSize: 20,
-            interval: 500000000 / spots.length,
+            //interval: 500000000 / spots.length,
+            //interval: ((epochMax - epochMin) / spots.length) * 10,
+            //interval: 1650057221 / spots.length,
+            interval: 2592000, // 1 mes
             //interval: (spots.last.x - spots.first.x),
             //interval: fechas.length / 2,
             getTitlesWidget: (double value, TitleMeta meta) {

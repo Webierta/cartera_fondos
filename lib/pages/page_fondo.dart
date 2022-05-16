@@ -55,6 +55,7 @@ class _PageFondoState extends State<PageFondo> {
   }
 
   _updateValores() async {
+    await _db.getFondos(carteraOn);
     setState(() => loading = true);
     await _db.createTableFondo(carteraOn, fondoOn);
     setState(() => msgLoading = 'Cargando datos almacenados...');
@@ -102,7 +103,7 @@ class _PageFondoState extends State<PageFondo> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () async {
+          onPressed: () {
             ScaffoldMessenger.of(context).removeCurrentSnackBar();
             // TODO: set carteraOn antes de navigator??
             Navigator.of(context).pushNamed(RouteGenerator.carteraPage);
@@ -145,13 +146,17 @@ class _PageFondoState extends State<PageFondo> {
       ),
       body: loading
           ? Padding(
-              padding: const EdgeInsets.only(top: 50, left: 20, right: 20),
-              child: Column(
-                children: [
-                  const SizedBox(height: 50),
-                  const LinearProgressIndicator(),
-                  Text(msgLoading),
-                ],
+              padding: const EdgeInsets.symmetric(horizontal: 40),
+              child: Center(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const LinearProgressIndicator(),
+                    const SizedBox(height: 10),
+                    Text(msgLoading),
+                  ],
+                ),
               ),
             )
           : listaTabs.elementAt(_selectedIndex),
@@ -215,9 +220,13 @@ class _PageFondoState extends State<PageFondo> {
   }
 
   void _getDataApi() async {
-    //TODO: msg updating
-    print('UPDATING...');
-    final getDataApi = await apiService.getDataApi(fondoOn.isin);
+    setState(() {
+      loading = true;
+      msgLoading = 'Conectando...';
+    });
+    final getDataApi = await apiService
+        .getDataApi(fondoOn.isin)
+        .whenComplete(() => setState(() => msgLoading = 'Datos descargados...'));
     if (getDataApi != null) {
       var newValor = Valor(date: getDataApi.epochSecs, precio: getDataApi.price);
       var newMoneda = getDataApi.market;
@@ -229,15 +238,29 @@ class _PageFondoState extends State<PageFondo> {
         ..lastPrecio = newLastPrecio
         ..lastDate = newLastDate;
       //});
-
-      _db.insertDataApi(carteraOn, fondoOn,
-          moneda: newMoneda, lastPrecio: newLastPrecio, lastDate: newLastDate);
       //TODO check newvalor repetido por date ??
-      _db.insertVL(carteraOn, fondoOn, newValor);
-      _updateValores();
+
+      /*print('***********************');
+      await _db.getFondos(carteraOn);
+      for (var fondo in _db.dbFondos) {
+        print(fondo.name);
+      }
+      print('***********************');*/
+
+      //TODO: ESTE INSERT DESORDENA LOS FONDOS (pone al final el actualizado)
+      await _db.insertDataApi(carteraOn, fondoOn,
+          moneda: newMoneda, lastPrecio: newLastPrecio, lastDate: newLastDate);
+      await _db.insertVL(carteraOn, fondoOn, newValor);
+      //.whenComplete(() => setState(() => msgLoading = 'Almacenando datos...'));
+
+      setState(() {
+        msgLoading = 'Datos almacenados...';
+      });
+      await _updateValores();
       // TODO: BANNER
       //print(dataApi?.price);
     } else {
+      setState(() => loading = false);
       print('ERROR GET DATAAPI');
       _showMsg(msg: 'Error en la descarga de datos.', color: Colors.red);
     }
@@ -273,7 +296,7 @@ class _PageFondoState extends State<PageFondo> {
           loading = false;
           msgLoading = '';
         });*/
-        _compareLastValor();
+        await _compareLastValor();
       } else {
         setState(() => loading = false);
         _showMsg(msg: 'Error en la descarga de datos.', color: Colors.red);
@@ -293,9 +316,9 @@ class _PageFondoState extends State<PageFondo> {
         fondoOn
           ..lastPrecio = lastPrecio
           ..lastDate = lastDate;
-        _db.insertDataApi(carteraOn, fondoOn, lastPrecio: lastPrecio, lastDate: lastDate);
-        _db.insertVL(carteraOn, fondoOn, lastValor);
-        _updateValores();
+        await _db.insertDataApi(carteraOn, fondoOn, lastPrecio: lastPrecio, lastDate: lastDate);
+        await _db.insertVL(carteraOn, fondoOn, lastValor);
+        await _updateValores();
         return true;
       } else if (fondoOn.lastDate! < lastDate) {
         fondoOn
@@ -303,17 +326,15 @@ class _PageFondoState extends State<PageFondo> {
           ..lastDate = lastDate;
         _db.insertDataApi(carteraOn, fondoOn, lastPrecio: lastPrecio, lastDate: lastDate);
         _db.insertVL(carteraOn, fondoOn, lastValor);
-        _updateValores();
+        await _updateValores();
         return true;
       } else {
-        _updateValores();
+        await _updateValores();
         return false;
       }
     }
-    _updateValores();
+    await _updateValores();
     return false;
-
-    //if(valores.first.date < fondoOn.lastDate){         }
   }
 
   void _deleteConfirm(BuildContext context) {
@@ -340,7 +361,7 @@ class _PageFondoState extends State<PageFondo> {
                   ),
                   onPressed: () async {
                     await _db.deleteAllValoresInFondo(carteraOn, fondoOn);
-                    _updateValores();
+                    await _updateValores();
                     Navigator.of(context).pop();
                   },
                 ),
