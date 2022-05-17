@@ -24,7 +24,7 @@ class _PageSearchFondoState extends State<PageSearchFondo> {
   }
 
   Future<void> readJson() async {
-    final String response = await rootBundle.loadString('assets/fondos_all.json');
+    final String response = await rootBundle.loadString('assets/fondos.json');
     final data = await json.decode(response);
     for (var item in data) {
       _allFondos.add(item);

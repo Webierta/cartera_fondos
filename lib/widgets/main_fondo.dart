@@ -89,36 +89,36 @@ class MainFondo extends StatelessWidget {
             ],
           ),
         ),
-        if (valoresOn.isNotEmpty)
-          Card(
-            child: Column(
-              children: [
-                ListTile(
-                  title: fondoOn.participaciones > 0
-                      ? Text('Patrimonio: ${fondoOn.participaciones * fondoOn.lastPrecio!}')
-                      : const Text('Patrimonio: Sin datos'),
-                  subtitle: fondoOn.participaciones > 0
-                      ? Text('Participaciones: ${fondoOn.participaciones}')
-                      : const Text(
-                          'Subscribe participaciones de este Fondo para seguir el rendimiento de tu inversión'),
-                  // TODO: nueva ventana con Fecha / participaciones y VL
-                  trailing: IconButton(
-                    icon: const Icon(Icons.shopping_cart, color: Colors.blue),
-                    onPressed: () {
-                      Navigator.of(context).pushNamed(RouteGenerator.mercadoPage);
-                    },
-                  ),
+        //if (valoresOn.isNotEmpty)
+        Card(
+          child: Column(
+            children: [
+              ListTile(
+                title: fondoOn.participaciones > 0
+                    ? Text('Patrimonio: ${fondoOn.participaciones * fondoOn.lastPrecio!}')
+                    : const Text('Patrimonio: Sin datos'),
+                subtitle: fondoOn.participaciones > 0
+                    ? Text('Participaciones: ${fondoOn.participaciones}')
+                    : const Text(
+                        'Subscribe participaciones de este Fondo para seguir el rendimiento de tu inversión'),
+                // TODO: nueva ventana con Fecha / participaciones y VL
+                trailing: IconButton(
+                  icon: const Icon(Icons.shopping_cart, color: Colors.blue),
+                  onPressed: () {
+                    Navigator.of(context).pushNamed(RouteGenerator.mercadoPage);
+                  },
                 ),
-                const SizedBox(height: 10),
-                if (fondoOn.participaciones != 0)
-                  const ListTile(
-                    title: Text('Rendimiento:'),
-                    isThreeLine: true,
-                    subtitle: Text('Rentabilidad: \nTAE: '),
-                  ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 10),
+              if (fondoOn.participaciones != 0)
+                const ListTile(
+                  title: Text('Rendimiento:'),
+                  isThreeLine: true,
+                  subtitle: Text('Rentabilidad: \nTAE: '),
+                ),
+            ],
           ),
+        ),
       ],
     );
   }

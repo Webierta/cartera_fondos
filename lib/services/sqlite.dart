@@ -107,13 +107,13 @@ class Sqlite {
 
   Future<void> createTableMercado(Cartera cartera, Fondo fondo) async {
     await openDb();
-    var nameTable = fondo.isin + '_' + cartera.name;
+    var nameTable = 'mk_' + fondo.isin + '_' + cartera.name;
     await _db.execute('''
       CREATE TABLE IF NO EXISTS $nameTable (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         $columnTipo INTEGER,
         $columnDateMercado INTEGER,
-        $columnParticipaciones INTEGER,
+        $columnParticipaciones REAL,
         $columnPrecioMercado REAL)
       ''');
   }

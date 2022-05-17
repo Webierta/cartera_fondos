@@ -10,9 +10,9 @@ class FechaUtil {
     return DateTime.fromMillisecondsSinceEpoch(epoch * 1000);
   }
 
-  static String epochToString(int epoch) {
+  static String epochToString(int epoch, {String formato = 'd/MM/yy'}) {
     final DateTime date = epochToDate(epoch);
-    return dateToString(date: date, formato: 'dd/MM/yy');
+    return dateToString(date: date, formato: formato);
   }
 }
 

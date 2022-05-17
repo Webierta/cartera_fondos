@@ -1,7 +1,7 @@
 class Operacion {
   final bool tipo;
   final int date;
-  final int participaciones;
+  final double participaciones;
   final double precio;
 
   Operacion({
@@ -16,13 +16,19 @@ class Operacion {
   }
 
   String moneda = '';
-  int totalParticipaciones = 0;
-  double importe = 0;
+  double inversion = 0;
+  int participacionesActual = 0;
+  double precioActual = 0;
+  double importeActual = 0;
   //double rentabilidad = 0;
   //double tae = 0;
 
   int _getTotalParticipaciones() {
-    return totalParticipaciones;
+    return participacionesActual;
+  }
+
+  double _getInversion() {
+    return participaciones * precio;
   }
 
   double _getImporte(double lastPrecio) {
