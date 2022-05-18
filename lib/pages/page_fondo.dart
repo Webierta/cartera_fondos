@@ -65,7 +65,7 @@ class _PageFondoState extends State<PageFondo> {
           carfoin.setValores = _db.dbValoresByOrder;
         }));
     //TODO: si moneda, lastPrecio y LastDate == null hacer un update
-    if (fondoOn.moneda == null) {}
+    //if (fondoOn.moneda == null) {}
     //TODO: check si data no es null ??
     //TODO: ordenar primero por date ??
   }
@@ -229,30 +229,29 @@ class _PageFondoState extends State<PageFondo> {
         .whenComplete(() => setState(() => msgLoading = 'Datos descargados...'));
     if (getDataApi != null) {
       var newValor = Valor(date: getDataApi.epochSecs, precio: getDataApi.price);
-      var newMoneda = getDataApi.market;
-      var newLastPrecio = getDataApi.price;
-      var newLastDate = getDataApi.epochSecs;
+      // TODO: valor divisa ??
+      //var newMoneda = getDataApi.market;
+      //var newLastPrecio = getDataApi.price;
+      //var newLastDate = getDataApi.epochSecs;
       //setState(() {
-      fondoOn
+      //TODO: POSIBLE ERROR SI CHOCA CON VALOR INTRODUCIDO DESDE MERCADO CON FECHA ANTERIOR
+      //fondoOn.divisa = newMoneda;
+      /*fondoOn
         ..moneda = newMoneda
         ..lastPrecio = newLastPrecio
-        ..lastDate = newLastDate;
+        ..lastDate = newLastDate;*/
       //});
       //TODO check newvalor repetido por date ??
 
-      /*print('***********************');
-      await _db.getFondos(carteraOn);
-      for (var fondo in _db.dbFondos) {
-        print(fondo.name);
-      }
-      print('***********************');*/
-
       //TODO: ESTE INSERT DESORDENA LOS FONDOS (pone al final el actualizado)
-      await _db.insertDataApi(carteraOn, fondoOn,
-          moneda: newMoneda, lastPrecio: newLastPrecio, lastDate: newLastDate);
+      //await _db.insertDataApi(carteraOn, fondoOn,
+      //    moneda: newMoneda, lastPrecio: newLastPrecio, lastDate: newLastDate);
+      fondoOn.divisa = getDataApi.market;
+      //Fondo newFondo = fondoOn;
+      //newFondo.divisa = getDataApi.market;
+      await _db.insertFondo(carteraOn, fondoOn);
       await _db.insertVL(carteraOn, fondoOn, newValor);
       //.whenComplete(() => setState(() => msgLoading = 'Almacenando datos...'));
-
       setState(() {
         msgLoading = 'Datos almacenados...';
       });
@@ -287,16 +286,18 @@ class _PageFondoState extends State<PageFondo> {
         for (var dataApi in getDateApiRange) {
           newListValores.add(Valor(date: dataApi.epochSecs, precio: dataApi.price));
         }
+
         await _db
             .insertListVL(carteraOn, fondoOn, newListValores)
             .whenComplete(() => setState(() => msgLoading = 'Almacenando datos...'));
 
-        //await _updateValores();
+        await _updateValores();
         /*setState(() {
           loading = false;
           msgLoading = '';
         });*/
-        await _compareLastValor();
+        // TODO set last valor (date y precio) desde VALORES cada vez en _updateValores
+        //await _compareLastValor();
       } else {
         setState(() => loading = false);
         _showMsg(msg: 'Error en la descarga de datos.', color: Colors.red);
@@ -305,7 +306,8 @@ class _PageFondoState extends State<PageFondo> {
     }
   }
 
-  Future<bool> _compareLastValor() async {
+  //TODO: compare con un valor pasado como argumento
+  /*Future<bool> _compareLastValor() async {
     await _db.getValoresByOrder(carteraOn, fondoOn);
     var valores = _db.dbValoresByOrder;
     if (valores.isNotEmpty) {
@@ -316,7 +318,8 @@ class _PageFondoState extends State<PageFondo> {
         fondoOn
           ..lastPrecio = lastPrecio
           ..lastDate = lastDate;
-        await _db.insertDataApi(carteraOn, fondoOn, lastPrecio: lastPrecio, lastDate: lastDate);
+        //await _db.insertDataApi(carteraOn, fondoOn, lastPrecio: lastPrecio, lastDate: lastDate);
+        await _db.insertFondo(carteraOn, fondoOn);
         await _db.insertVL(carteraOn, fondoOn, lastValor);
         await _updateValores();
         return true;
@@ -324,8 +327,9 @@ class _PageFondoState extends State<PageFondo> {
         fondoOn
           ..lastPrecio = lastPrecio
           ..lastDate = lastDate;
-        _db.insertDataApi(carteraOn, fondoOn, lastPrecio: lastPrecio, lastDate: lastDate);
-        _db.insertVL(carteraOn, fondoOn, lastValor);
+        //_db.insertDataApi(carteraOn, fondoOn, lastPrecio: lastPrecio, lastDate: lastDate);
+        await _db.insertFondo(carteraOn, fondoOn);
+        await _db.insertVL(carteraOn, fondoOn, lastValor);
         await _updateValores();
         return true;
       } else {
@@ -335,7 +339,7 @@ class _PageFondoState extends State<PageFondo> {
     }
     await _updateValores();
     return false;
-  }
+  }*/
 
   void _deleteConfirm(BuildContext context) {
     if (_db.dbValoresByOrder.isEmpty) {
@@ -362,7 +366,8 @@ class _PageFondoState extends State<PageFondo> {
                   onPressed: () async {
                     await _db.deleteAllValoresInFondo(carteraOn, fondoOn);
                     await _updateValores();
-                    Navigator.of(context).pop();
+                    //Navigator.of(context).pop();
+                    Navigator.of(context).pushNamed(RouteGenerator.fondoPage);
                   },
                 ),
               ],

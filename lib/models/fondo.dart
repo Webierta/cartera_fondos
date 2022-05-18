@@ -3,14 +3,16 @@ import 'valor.dart';
 class Fondo {
   final String isin;
   final String name;
+  String divisa;
 
-  Fondo({required this.isin, required this.name});
+  Fondo({required this.isin, required this.name, this.divisa = ''});
+  //Fondo({required this.isin, required this.name});
 
   Map<String, dynamic> toMap() {
-    return {'isin': isin, 'name': name};
+    return {'isin': isin, 'name': name, 'divisa': divisa};
   }
 
-  Map<String, dynamic> toMapDataApi() {
+  /*Map<String, dynamic> toMapDataApi() {
     return {
       'isin': isin,
       'name': name,
@@ -18,15 +20,15 @@ class Fondo {
       'lastPrecio': lastPrecio,
       'lastDate': lastDate
     };
-  }
+  }*/
 
   Map<String, dynamic> toMapVL() {
     return {'date': valor, 'name': name};
   }
 
-  String? moneda;
-  double? lastPrecio;
-  int? lastDate;
+  //String? moneda;
+  //double? lastPrecio;
+  //int? lastDate;
   int participaciones = 0;
   //double? dif;
 

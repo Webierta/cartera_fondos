@@ -14,7 +14,8 @@ class Sqlite {
   // TABLE CARTERA
   static const columnName = 'name';
   static const columnIsin = 'isin';
-  static const columnMoneda = 'moneda';
+  //static const columnMoneda = 'moneda';
+  static const columnDivisa = 'divisa';
   static const columnLastPrecio = 'lastPrecio';
   static const columnLastDate = 'lastDate';
   // TABLE FONDO
@@ -89,9 +90,7 @@ class Sqlite {
     CREATE TABLE IF NOT EXISTS ${cartera.name} (
       $columnIsin TEXT PRIMARY KEY,
       $columnName TEXT NOT NULL,
-      $columnMoneda TEXT,
-      $columnLastPrecio REAL,
-      $columnLastDate INTEGER)
+      $columnDivisa TEXT)
     ''');
   }
 
@@ -125,16 +124,16 @@ class Sqlite {
 
   Future<void> insertFondo(Cartera cartera, Fondo fondo) async {
     await openDb();
-    await _db.insert(cartera.name, fondo.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    await _db.insert(cartera.name, fondo.toMap(), conflictAlgorithm: ConflictAlgorithm.ignore);
   }
 
-  Future<void> insertDataApi(Cartera cartera, Fondo fondo,
+  /*Future<void> insertDataApi(Cartera cartera, Fondo fondo,
       {String? moneda, double? lastPrecio, int? lastDate}) async {
     await openDb();
     await _db.insert(cartera.name, fondo.toMapDataApi(),
         conflictAlgorithm: ConflictAlgorithm.ignore);
     //TODO: ConflictAlgorithm.replace reordena los fondos y lo pone al final ??
-  }
+  }*/
 
   Future<void> insertVL(Cartera cartera, Fondo fondo, Valor valor) async {
     await openDb();
@@ -181,13 +180,14 @@ class Sqlite {
     final List<Map<String, dynamic>> maps = await _db.query(cartera.name);
     List<Fondo> fondos = List.generate(
       maps.length,
-      (i) => Fondo(isin: maps[i][columnIsin], name: maps[i][columnName]),
+      (i) => Fondo(
+          isin: maps[i][columnIsin], name: maps[i][columnName], divisa: maps[i][columnDivisa]),
     );
-    for (var i = 0; i < fondos.length; i++) {
-      fondos[i].moneda = maps[i][columnMoneda];
-      fondos[i].lastPrecio = maps[i][columnLastPrecio];
-      fondos[i].lastDate = maps[i][columnLastDate];
-    }
+    /*for (var i = 0; i < fondos.length; i++) {
+      fondos[i].divisa = maps[i][columnDivisa];
+      //fondos[i].lastPrecio = maps[i][columnLastPrecio];
+      //fondos[i].lastDate = maps[i][columnLastDate];
+    }*/
     _dbFondos = fondos;
   }
 

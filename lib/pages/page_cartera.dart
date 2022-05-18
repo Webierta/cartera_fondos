@@ -313,17 +313,20 @@ class _PageCarteraState extends State<PageCartera> {
         final getDataApi = await apiService.getDataApi(fondo.isin);
         if (getDataApi != null) {
           var newValor = Valor(date: getDataApi.epochSecs, precio: getDataApi.price);
-          var newMoneda = getDataApi.market;
-          var newLastPrecio = getDataApi.price;
-          var newLastDate = getDataApi.epochSecs;
+          //TODO valor divisa??
+          // var newMoneda = getDataApi.market;
+          //var newLastPrecio = getDataApi.price;
+          //var newLastDate = getDataApi.epochSecs;
           //setState(() {
-          fondo
+          //fondo.moneda = newMoneda;
+          /*fondo
             ..moneda = newMoneda
             ..lastPrecio = newLastPrecio
-            ..lastDate = newLastDate;
+            ..lastDate = newLastDate;*/
           //});
-          await _db.insertDataApi(carteraOn, fondo,
-              moneda: newMoneda, lastPrecio: newLastPrecio, lastDate: newLastDate);
+          //await _db.insertDataApi(carteraOn, fondo,
+          //    moneda: newMoneda, lastPrecio: newLastPrecio, lastDate: newLastDate);
+          await _db.insertFondo(carteraOn, fondo);
           await _db.insertVL(carteraOn, fondo, newValor);
           mapResultados[fondo.name] = const Icon(Icons.check_box, color: Colors.green);
         } else {

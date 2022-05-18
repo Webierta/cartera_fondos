@@ -1,4 +1,4 @@
-import 'package:cartera_fondos/models/valor.dart';
+//import 'package:cartera_fondos/models/valor.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -59,7 +59,8 @@ class MainFondo extends StatelessWidget {
             children: [
               ListTile(
                 leading: Text(
-                  fondoOn.moneda ?? '',
+                  //fondoOn.divisa ?? '',
+                  fondoOn.divisa,
                   style: Theme.of(context).textTheme.labelLarge,
                 ),
                 title: valoresOn.isEmpty
@@ -95,7 +96,8 @@ class MainFondo extends StatelessWidget {
             children: [
               ListTile(
                 title: fondoOn.participaciones > 0
-                    ? Text('Patrimonio: ${fondoOn.participaciones * fondoOn.lastPrecio!}')
+                    //? Text('Patrimonio: ${fondoOn.participaciones * fondoOn.lastPrecio!}')
+                    ? Text('Patrimonio: ${fondoOn.participaciones * valoresOn.first.precio}')
                     : const Text('Patrimonio: Sin datos'),
                 subtitle: fondoOn.participaciones > 0
                     ? Text('Participaciones: ${fondoOn.participaciones}')

@@ -22,6 +22,13 @@ class Valor {
     return [..._valores];
   }
 
+  Valor? get lastValor {
+    if (_valores.isNotEmpty) {
+      return _valores.first;
+    }
+    return null;
+  }
+
   /*DateTime get fecha {
     final DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(date * 1000);
     //String fechaFormat = DateFormat('yyyy-MM-dd').format(dateTime);

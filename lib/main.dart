@@ -45,7 +45,10 @@ class MyApp extends StatelessWidget {
       supportedLocales: const [Locale('es', 'ES')],
       debugShowCheckedModeBanner: false,
       title: 'Cartera Fondos',
-      theme: ThemeData(primarySwatch: Colors.blue),
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
       initialRoute: '/',
       onGenerateRoute: RouteGenerator.generateRoute,
       //home: const PageHome(),
