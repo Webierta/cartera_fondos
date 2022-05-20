@@ -15,6 +15,7 @@ class CarfoinProvider with ChangeNotifier {
 
   set setCartera(Cartera cartera) {
     _carteraOn = cartera;
+    // TODO: ??????????????? QUITANDOLOLO NO REBUILD PAGE_HOME AL TAP PARA IR A PAGE CARTERA !!
     notifyListeners();
   }
 

@@ -10,6 +10,7 @@ import '../models/valor.dart';
 import '../routes.dart';
 import '../services/api_service.dart';
 import '../services/sqlite.dart';
+import '../widgets/loading_progress.dart';
 
 enum MenuCartera { ordenar, eliminar }
 
@@ -26,8 +27,9 @@ class _PageCarteraState extends State<PageCartera> {
   late ApiService apiService;
 
   var fondos = <Fondo>[];
-  bool _isUpdating = false;
-  String _msgUpdating = '';
+
+  final GlobalKey _dialogKey = GlobalKey();
+  String _loadingText = '';
 
   @override
   void initState() {
@@ -57,6 +59,7 @@ class _PageCarteraState extends State<PageCartera> {
     fondo.addValores(_db.dbValoresByOrder);
   }
 
+  // REFACTORIZAR WIDGET
   List<Column> _buildListMenu(BuildContext context) {
     final Map<String, IconData> mapItemMenu = {
       MenuCartera.ordenar.name: Icons.sort_by_alpha,
@@ -78,86 +81,109 @@ class _PageCarteraState extends State<PageCartera> {
 
   @override
   Widget build(BuildContext context) {
-    final carfoin = Provider.of<CarfoinProvider>(context);
+    //final carfoin = Provider.of<CarfoinProvider>(context);
+    final carfoin = context.read<CarfoinProvider>();
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            ScaffoldMessenger.of(context).removeCurrentSnackBar();
-            Navigator.of(context).pushNamed(RouteGenerator.homePage);
-          },
-        ),
-        title: Text(carteraOn.name),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => _refreshAll(context),
-          ),
-          PopupMenuButton(
-              color: Colors.blue,
-              offset: Offset(0.0, AppBar().preferredSize.height),
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(8.0)),
-              ),
-              itemBuilder: (ctx) {
-                var listItemMenu = _buildListMenu(context);
-                return [
-                  for (var item in listItemMenu)
-                    PopupMenuItem(
-                      value: MenuCartera.values[listItemMenu.indexOf(item)],
-                      child: item,
-                    )
-                ];
-              },
-              onSelected: (MenuCartera item) async {
-                if (item == MenuCartera.ordenar) {
-                  var fondosSort = <Fondo>[];
-                  fondosSort = [...fondos];
-                  fondosSort.sort((a, b) => a.name.compareTo(b.name));
-                  if (listEquals(fondos, fondosSort)) {
-                    _showMsg(msg: 'Nada que hacer: Los fondos ya están ordenados por nombre.');
-                  } else {
-                    _db.deleteAllFondosInCartera(carteraOn);
-                    for (var fondo in fondosSort) {
-                      _db.insertFondo(carteraOn, fondo);
-                    }
-                    _updateFondos();
-                  }
-                } else if (item == MenuCartera.eliminar) {
-                  _deleteAllConfirm(context);
-                }
-              }),
-        ],
-      ),
-      body: FutureBuilder<bool>(
-        future: _db.openDb(), //TODO: otro future más específico para fondos ??
-        builder: (context, snapshot) {
-          // TODO: necesario ???
-          if (_isUpdating) {
+    return FutureBuilder<bool>(
+      future: _db.openDb(), //TODO: otro future más específico para fondos ??
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const LoadingProgress(titulo: 'Recuperando fondos...', subtitulo: 'Cargando...');
+        }
+        if (snapshot.connectionState == ConnectionState.done) {
+          /*WidgetsBinding.instance?.addPostFrameCallback((_) {
+            Navigator.of(context, rootNavigator: true).pop();
+          });*/
+          // TODO : pendiente manejar error
+          if (snapshot.hasError) {
             return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(height: 10),
-                  //Text('Recuperando fondos...'),
-                  Text(_msgUpdating),
-                ],
+              child: Text(
+                '${snapshot.error}',
+                style: const TextStyle(fontSize: 18),
               ),
             );
-          }
-          if (snapshot.connectionState == ConnectionState.done) {
-            if (snapshot.hasError) {
-              return Center(
-                child: Text(
-                  '${snapshot.error}',
-                  style: const TextStyle(fontSize: 18),
+          } else if (snapshot.hasData) {
+            return Scaffold(
+              appBar: AppBar(
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).removeCurrentSnackBar();
+                    Navigator.of(context).pushNamed(RouteGenerator.homePage, arguments: true);
+                  },
                 ),
-              );
-            } else if (snapshot.hasData) {
-              return fondos.isEmpty
+                title: Text(carteraOn.name),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    onPressed: () async => await _dialogUpdateAll(context),
+                  ),
+                  PopupMenuButton(
+                      color: Colors.blue,
+                      offset: Offset(0.0, AppBar().preferredSize.height),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(8.0)),
+                      ),
+                      itemBuilder: (ctx) {
+                        var listItemMenu = _buildListMenu(context);
+                        return [
+                          for (var item in listItemMenu)
+                            PopupMenuItem(
+                              value: MenuCartera.values[listItemMenu.indexOf(item)],
+                              child: item,
+                            )
+                        ];
+                      },
+                      onSelected: (MenuCartera item) async {
+                        if (item == MenuCartera.ordenar) {
+                          _sortFondos();
+                        } else if (item == MenuCartera.eliminar) {
+                          _deleteAllConfirm(context);
+                        }
+                      }),
+                ],
+              ),
+              floatingActionButton: SpeedDial(
+                //animatedIcon: AnimatedIcons.menu_close,
+                //activeIcon: Icons.add_chart,
+                //animatedIcon: AnimatedIcons.menu_close,
+                icon: Icons.addchart,
+                spacing: 8,
+                spaceBetweenChildren: 4,
+                overlayColor: Colors.blue,
+                overlayOpacity: 0.2,
+                children: [
+                  SpeedDialChild(
+                    child: const Icon(Icons.search),
+                    label: 'Buscar online por ISIN',
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    onTap: () async {
+                      ScaffoldMessenger.of(context).removeCurrentSnackBar();
+                      final newFondo =
+                          await Navigator.of(context).pushNamed(RouteGenerator.inputFondo);
+                      newFondo != null
+                          ? _addFondo(newFondo as Fondo)
+                          : _showMsg(msg: 'Sin cambios en la cartera.');
+                    },
+                  ),
+                  SpeedDialChild(
+                    child: const Icon(Icons.storage), //dns // list  //
+                    label: 'Base de Datos local',
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    onTap: () async {
+                      ScaffoldMessenger.of(context).removeCurrentSnackBar();
+                      final newFondo =
+                          await Navigator.of(context).pushNamed(RouteGenerator.searchFondo);
+                      newFondo != null
+                          ? _addFondo(newFondo as Fondo)
+                          : _showMsg(msg: 'Sin cambios en la cartera.');
+                    },
+                  ),
+                ],
+              ),
+              body: fondos.isEmpty
                   ? const Center(child: Text('No hay fondos guardados.'))
                   : ListView.builder(
                       itemCount: fondos.length,
@@ -189,9 +215,12 @@ class _PageCarteraState extends State<PageCartera> {
                                 ],
                               ),
                               onTap: () {
-                                ScaffoldMessenger.of(context).removeCurrentSnackBar();
-                                carfoin.setFondo = fondos[index];
-                                Navigator.of(context).pushNamed(RouteGenerator.fondoPage);
+                                // TODO : revisar
+                                WidgetsBinding.instance?.addPostFrameCallback((_) {
+                                  ScaffoldMessenger.of(context).removeCurrentSnackBar();
+                                  carfoin.setFondo = fondos[index];
+                                  Navigator.of(context).pushNamed(RouteGenerator.fondoPage);
+                                });
                               },
                             ),
                           ),
@@ -211,62 +240,197 @@ class _PageCarteraState extends State<PageCartera> {
                           },
                         );
                       },
-                    );
-            }
+                    ),
+            );
           }
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                CircularProgressIndicator(),
-                SizedBox(height: 10),
-                Text('Recuperando datos...'), // Text(_msgUpdating),
-                //Text(_msgUpdating),
-              ],
+        }
+        return const LoadingProgress(titulo: 'Recuperando fondos...', subtitulo: 'Cargando...');
+      },
+    );
+  }
+
+  _dialogUpdateAll(BuildContext context) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          key: _dialogKey,
+          builder: (context, setState) {
+            // return Dialog(child: Loading(...); ???
+            return Loading(titulo: 'Actualizando fondos...', subtitulo: _loadingText);
+          },
+        );
+      },
+    );
+    var mapResultados = await _updateAll(context);
+    Navigator.pop(context);
+    if (mapResultados.isNotEmpty) {
+      await _showResultados(mapResultados);
+    } else {
+      _showMsg(msg: 'Nada que actualizar');
+    }
+  }
+
+  _setStateDialog(String newText) {
+    if (_dialogKey.currentState != null && _dialogKey.currentState!.mounted) {
+      _dialogKey.currentState!.setState(() {
+        _loadingText = newText;
+      });
+    }
+  }
+
+  Future<Map<String, Icon>> _updateAll(BuildContext context) async {
+    _setStateDialog('Conectando...');
+    var mapResultados = <String, Icon>{};
+    await _db.getFondos(carteraOn);
+    if (_db.dbFondos.isNotEmpty) {
+      for (var fondo in _db.dbFondos) {
+        _setStateDialog(fondo.name);
+        //TODO: NECESARIO ?
+        await _db.createTableFondo(carteraOn, fondo);
+        final getDataApi = await apiService.getDataApi(fondo.isin);
+        if (getDataApi != null) {
+          var newValor = Valor(date: getDataApi.epochSecs, precio: getDataApi.price);
+          //TODO valor divisa??
+          // var newMoneda = getDataApi.market;
+          //await _db.insertDataApi(carteraOn, fondo,
+          //    moneda: newMoneda, lastPrecio: newLastPrecio, lastDate: newLastDate);
+          await _db.insertFondo(carteraOn, fondo);
+          await _db.insertVL(carteraOn, fondo, newValor);
+          mapResultados[fondo.name] = const Icon(Icons.check_box, color: Colors.green);
+        } else {
+          mapResultados[fondo.name] = const Icon(Icons.disabled_by_default, color: Colors.red);
+        }
+      }
+      //TODO: check si es necesario update (si no ha habido cambios porque todos los fondos han dado error)
+      await _updateFondos();
+    }
+    return mapResultados;
+  }
+
+  _showResultados(Map<String, Icon> mapResultados) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return WillPopScope(
+          onWillPop: () async => false,
+          child: AlertDialog(
+            insetPadding: const EdgeInsets.all(10),
+            title: const Text('Resultado'),
+            actions: [
+              TextButton(
+                child: const Text('Cerrar'),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+            content: SingleChildScrollView(
+              child: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (var res in mapResultados.entries)
+                      ListTile(dense: true, title: Text(res.key), trailing: res.value),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+/*  _refreshAll(BuildContext context) async {
+    var mapResultados = <String, Icon>{};
+    */ /*setState(() {
+      _isUpdating = true;
+      _msgUpdating = 'Iniciando descarga...';
+    });*/ /*
+    //TODO: ??  cambia de página ??
+    //const LoadingProgress(titulo: 'Recuperando fondos...', subtitulo: 'Cargando...');
+    //Loading(context).openDialog(title: 'Actualizando fondos...');
+    await _db.getFondos(carteraOn);
+    if (_db.dbFondos.isNotEmpty) {
+      for (var fondo in _db.dbFondos) {
+        //setState(() => _msgUpdating = 'Actualizando...\n${fondo.name}');
+        //TODO: NECESARIO ?
+        await _db.createTableFondo(carteraOn, fondo);
+        final getDataApi = await apiService.getDataApi(fondo.isin);
+        if (getDataApi != null) {
+          var newValor = Valor(date: getDataApi.epochSecs, precio: getDataApi.price);
+          //TODO valor divisa??
+          // var newMoneda = getDataApi.market;
+          //var newLastPrecio = getDataApi.price;
+          //var newLastDate = getDataApi.epochSecs;
+          //setState(() {
+          //fondo.moneda = newMoneda;
+          */ /*fondo
+            ..moneda = newMoneda
+            ..lastPrecio = newLastPrecio
+            ..lastDate = newLastDate;*/ /*
+          //});
+          //await _db.insertDataApi(carteraOn, fondo,
+          //    moneda: newMoneda, lastPrecio: newLastPrecio, lastDate: newLastDate);
+          await _db.insertFondo(carteraOn, fondo);
+          await _db.insertVL(carteraOn, fondo, newValor);
+          mapResultados[fondo.name] = const Icon(Icons.check_box, color: Colors.green);
+        } else {
+          mapResultados[fondo.name] = const Icon(Icons.disabled_by_default, color: Colors.red);
+          //_showMsg(msg: 'Error al actualizar el fondo ${fondo.name}');  ???
+          // ESTO SE VE ALGUNA VEZ ??
+          */ /*setState(() {
+            _msgUpdating = 'Error al actualizar el fondo ${fondo.name}';
+          });*/ /*
+        }
+      }
+      await _updateFondos();
+      */ /*setState(() {
+        _isUpdating = false;
+        _msgUpdating = '';
+      });*/ /*
+
+      //TODO: vuelve a la página
+      //Loading(context).closeDialog();
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            insetPadding: const EdgeInsets.all(10),
+            title: const Text('Resultado'),
+            actions: [
+              TextButton(
+                child: const Text('Cerrar'),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+            content: SingleChildScrollView(
+              child: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (var res in mapResultados.entries)
+                      ListTile(dense: true, title: Text(res.key), trailing: res.value),
+                  ],
+                ),
+              ),
             ),
           );
         },
-      ),
-      floatingActionButton: SpeedDial(
-        //animatedIcon: AnimatedIcons.menu_close,
-        //activeIcon: Icons.add_chart,
-        //animatedIcon: AnimatedIcons.menu_close,
-        icon: Icons.addchart,
-        spacing: 8,
-        spaceBetweenChildren: 4,
-        overlayColor: Colors.blue,
-        overlayOpacity: 0.2,
-        children: [
-          SpeedDialChild(
-            child: const Icon(Icons.search),
-            label: 'Buscar online por ISIN',
-            backgroundColor: Colors.blue,
-            foregroundColor: Colors.white,
-            onTap: () async {
-              ScaffoldMessenger.of(context).removeCurrentSnackBar();
-              final newFondo = await Navigator.of(context).pushNamed(RouteGenerator.inputFondo);
-              newFondo != null
-                  ? _addFondo(newFondo as Fondo)
-                  : _showMsg(msg: 'Sin cambios en la cartera.');
-            },
-          ),
-          SpeedDialChild(
-            child: const Icon(Icons.storage), //dns // list  //
-            label: 'Base de Datos local',
-            backgroundColor: Colors.blue,
-            foregroundColor: Colors.white,
-            onTap: () async {
-              ScaffoldMessenger.of(context).removeCurrentSnackBar();
-              final newFondo = await Navigator.of(context).pushNamed(RouteGenerator.searchFondo);
-              newFondo != null
-                  ? _addFondo(newFondo as Fondo)
-                  : _showMsg(msg: 'Sin cambios en la cartera.');
-            },
-          ),
-        ],
-      ),
-    );
-  }
+      );
+    } else {
+      //Loading(context).closeDialog();
+      _showMsg(msg: 'Nada que actualizar');
+      */ /*setState(() {
+        _isUpdating = false;
+        _msgUpdating = '';
+      });*/ /*
+    }
+  }*/
 
   double? _getLastPrecio(Fondo fondo) {
     if (fondo.historico.isNotEmpty) {
@@ -298,84 +462,18 @@ class _PageCarteraState extends State<PageCartera> {
     }
   }
 
-  _refreshAll(BuildContext context) async {
-    var mapResultados = <String, Icon>{};
-    setState(() {
-      _isUpdating = true;
-      _msgUpdating = 'Iniciando descarga...';
-    });
-    await _db.getFondos(carteraOn);
-    if (_db.dbFondos.isNotEmpty) {
-      for (var fondo in _db.dbFondos) {
-        setState(() => _msgUpdating = 'Actualizando...\n${fondo.name}');
-        //TODO: NECESARIO ?
-        await _db.createTableFondo(carteraOn, fondo);
-        final getDataApi = await apiService.getDataApi(fondo.isin);
-        if (getDataApi != null) {
-          var newValor = Valor(date: getDataApi.epochSecs, precio: getDataApi.price);
-          //TODO valor divisa??
-          // var newMoneda = getDataApi.market;
-          //var newLastPrecio = getDataApi.price;
-          //var newLastDate = getDataApi.epochSecs;
-          //setState(() {
-          //fondo.moneda = newMoneda;
-          /*fondo
-            ..moneda = newMoneda
-            ..lastPrecio = newLastPrecio
-            ..lastDate = newLastDate;*/
-          //});
-          //await _db.insertDataApi(carteraOn, fondo,
-          //    moneda: newMoneda, lastPrecio: newLastPrecio, lastDate: newLastDate);
-          await _db.insertFondo(carteraOn, fondo);
-          await _db.insertVL(carteraOn, fondo, newValor);
-          mapResultados[fondo.name] = const Icon(Icons.check_box, color: Colors.green);
-        } else {
-          mapResultados[fondo.name] = const Icon(Icons.disabled_by_default, color: Colors.red);
-          //_showMsg(msg: 'Error al actualizar el fondo ${fondo.name}');  ???
-          // ESTO SE VE ALGUNA VEZ ??
-          setState(() {
-            _msgUpdating = 'Error al actualizar el fondo ${fondo.name}';
-          });
-        }
+  void _sortFondos() async {
+    var fondosSort = <Fondo>[];
+    fondosSort = [...fondos];
+    fondosSort.sort((a, b) => a.name.compareTo(b.name));
+    if (listEquals(fondos, fondosSort)) {
+      _showMsg(msg: 'Nada que hacer: Los fondos ya están ordenados por nombre.');
+    } else {
+      await _db.deleteAllFondosInCartera(carteraOn);
+      for (var fondo in fondosSort) {
+        await _db.insertFondo(carteraOn, fondo);
       }
       await _updateFondos();
-      setState(() {
-        _isUpdating = false;
-        _msgUpdating = '';
-      });
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            insetPadding: const EdgeInsets.all(10),
-            title: const Text('Resultado'),
-            actions: [
-              TextButton(
-                child: const Text('Cerrar'),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
-            content: SingleChildScrollView(
-              child: SizedBox(
-                width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (var res in mapResultados.entries)
-                      ListTile(dense: true, title: Text(res.key), trailing: res.value),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      );
-    } else {
-      _showMsg(msg: 'Nada que actualizar');
-      setState(() {
-        _isUpdating = false;
-        _msgUpdating = '';
-      });
     }
   }
 

@@ -8,7 +8,7 @@ import '../models/cartera.dart';
 import '../models/fondo.dart';
 import '../routes.dart';
 import '../services/sqlite.dart';
-import '../widgets/loading_progress.dart';
+import '../widgets/loading.dart';
 import '../widgets/my_drawer.dart';
 
 enum Menu { renombrar, ordenar, exportar, eliminar }
@@ -80,73 +80,79 @@ class _PageHomeState extends State<PageHome> {
 
   @override
   Widget build(BuildContext context) {
+    //final carfoin = Provider.of<CarfoinProvider>(context, listen: false);
     final carfoin = context.read<CarfoinProvider>();
 
-    return FutureBuilder<bool>(
-      future: _db.openDb(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const LoadingProgress(titulo: 'Recuperando carteras...', subtitulo: 'Cargando...');
-        }
-        if (snapshot.connectionState == ConnectionState.done) {
-          // TODO: MANEJAR ESTO
-          if (snapshot.hasError) {
-            return Center(
-              child: Text('${snapshot.error}', style: const TextStyle(fontSize: 18)),
-            );
-          } else if (snapshot.hasData) {
-            return Scaffold(
-              appBar: AppBar(
-                title: const FittedBox(child: Text('MIS CARTERAS')),
-                actions: [
-                  PopupMenuButton(
-                    color: Colors.blue,
-                    offset: Offset(0.0, AppBar().preferredSize.height),
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                    ),
-                    itemBuilder: (ctx) {
-                      var listItemMenu = _buildListItem(context);
-                      return [
-                        for (var item in listItemMenu)
-                          PopupMenuItem(value: Menu.values[listItemMenu.indexOf(item)], child: item)
-                      ];
-                    },
-                    onSelected: (Menu item) async {
-                      //TODO: ACCIONES PENDIENTES
-                      if (item == Menu.renombrar) {
-                        print('RENAME');
-                      } else if (item == Menu.ordenar) {
-                        var carterasSort = <Cartera>[];
-                        carterasSort = [...carteras];
-                        carterasSort.sort((a, b) => a.name.compareTo(b.name));
-                        // TODO: chequear si ya está ordenada
-                        //if (ListEquality().(carteras, carterasSort)) {}
-                        if (listEquals(carteras, carterasSort)) {
-                          _showMsg(
-                              msg: 'Nada que hacer: Las carteras ya están ordenadas por nombre.');
-                        } else {
-                          await _db.deleteAllCarteraInCarteras();
-                          for (var cartera in carterasSort) {
-                            await _db.insertCartera(cartera);
-                          }
-                          await _updateDbCarteras();
-                        }
-                      } else if (item == Menu.exportar) {
-                        print('EXPORTAR');
-                      } else if (item == Menu.eliminar) {
-                        _deleteConfirm(context);
-                      }
-                    },
-                  ),
-                ],
-              ),
-              drawer: const MyDrawer(),
-              floatingActionButton: FloatingActionButton(
-                child: const Icon(Icons.add),
-                onPressed: () => _carteraInput(context),
-              ),
-              body: carteras.isEmpty
+    return Scaffold(
+      appBar: AppBar(
+        title: const FittedBox(child: Text('MIS CARTERAS')),
+        actions: [
+          // TODO: ¿NECESARIO UPDATE DE CARTERAS?
+          /*IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => _updateDbCarteras(),
+          ),*/
+          PopupMenuButton(
+            color: Colors.blue,
+            offset: Offset(0.0, AppBar().preferredSize.height),
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8.0)),
+            ),
+            itemBuilder: (ctx) {
+              var listItemMenu = _buildListItem(context);
+              return [
+                for (var item in listItemMenu)
+                  PopupMenuItem(value: Menu.values[listItemMenu.indexOf(item)], child: item)
+              ];
+            },
+            onSelected: (Menu item) async {
+              //TODO: ACCIONES PENDIENTES
+              if (item == Menu.renombrar) {
+                print('RENAME');
+              } else if (item == Menu.ordenar) {
+                var carterasSort = <Cartera>[];
+                carterasSort = [...carteras];
+                carterasSort.sort((a, b) => a.name.compareTo(b.name));
+                // TODO: chequear si ya está ordenada
+                //if (ListEquality().(carteras, carterasSort)) {}
+                if (listEquals(carteras, carterasSort)) {
+                  _showMsg(msg: 'Nada que hacer: Las carteras ya están ordenadas por nombre.');
+                } else {
+                  await _db.deleteAllCarteraInCarteras();
+                  for (var cartera in carterasSort) {
+                    await _db.insertCartera(cartera);
+                  }
+                  await _updateDbCarteras();
+                }
+              } else if (item == Menu.exportar) {
+                print('EXPORTAR');
+              } else if (item == Menu.eliminar) {
+                _deleteConfirm(context);
+              }
+            },
+          ),
+        ],
+      ),
+      drawer: const MyDrawer(),
+      body: FutureBuilder<bool>(
+        future: _db.openDb(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return DialogScreen(context: context, title: 'Recuperando carteras...');
+          }
+          if (snapshot.connectionState == ConnectionState.done) {
+            WidgetsBinding.instance?.addPostFrameCallback((_) {
+              Navigator.of(context, rootNavigator: true).pop();
+            });
+            if (snapshot.hasError) {
+              return Center(
+                child: Text(
+                  '${snapshot.error}',
+                  style: const TextStyle(fontSize: 18),
+                ),
+              );
+            } else if (snapshot.hasData) {
+              return carteras.isEmpty
                   ? const Center(child: Text('No hay carteras guardadas.'))
                   : ListView.builder(
                       itemCount: carteras.length,
@@ -170,11 +176,11 @@ class _PageHomeState extends State<PageHome> {
                               ),
                               trailing: CircleAvatar(child: Text('$nFondos')),
                               onTap: () {
-                                //WidgetsBinding.instance?.addPostFrameCallback((_) {
-                                carfoin.setCartera = carteras[index];
-                                //Navigator.of(context).pushNamed(RouteGenerator.carteraPage);
-                                Navigator.of(context).pushNamed(RouteGenerator.carteraPage);
-                                //});
+                                WidgetsBinding.instance?.addPostFrameCallback((_) {
+                                  carfoin.setCartera = carteras[index];
+                                  //Navigator.of(context).pushNamed(RouteGenerator.carteraPage);
+                                  Navigator.of(context).pushNamed(RouteGenerator.carteraPage);
+                                });
                               },
                             ),
                           ),
@@ -195,12 +201,11 @@ class _PageHomeState extends State<PageHome> {
                           },
                         );
                       },
-                    ),
-            );
+                    );
+            }
           }
-        }
-        return const LoadingProgress(titulo: 'Actualizando carteras...');
-        /*return Center(
+          return const Text('');
+          /*return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: const [
@@ -210,7 +215,12 @@ class _PageHomeState extends State<PageHome> {
               ],
             ),
           );*/
-      },
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.add),
+        onPressed: () => _carteraInput(context),
+      ),
     );
   }
 

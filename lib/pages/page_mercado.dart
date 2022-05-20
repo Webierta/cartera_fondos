@@ -75,7 +75,7 @@ class _MercadoState extends State<PageMercado> {
             icon: const Icon(Icons.arrow_back),
             onPressed: () {
               ScaffoldMessenger.of(context).removeCurrentSnackBar();
-              Navigator.of(context).pushNamed(RouteGenerator.fondoPage);
+              Navigator.of(context).pushNamed(RouteGenerator.fondoPage, arguments: true);
             },
           ),
           title: const Text('Mercado')),
@@ -161,6 +161,7 @@ class _MercadoState extends State<PageMercado> {
                       if (fecha != null) {
                         setState(() {
                           // TODO: CONTROL OTRAS TIME ZONE PARA NO REPETIR DATE ??
+                          // o epoch +/- 1 day ??
                           DateTime timeZone = fecha.add(const Duration(hours: 2));
                           _date = timeZone.millisecondsSinceEpoch ~/ 1000;
                           _dateController.text = FechaUtil.dateToString(date: fecha);

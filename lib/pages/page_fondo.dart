@@ -13,6 +13,7 @@ import '../utils/fecha_util.dart';
 import '../widgets/grafico_chart.dart';
 import '../widgets/main_fondo.dart';
 import '../widgets/tabla_fondo.dart';
+//import 'page_cartera.dart';
 
 enum Menu { editar, suscribir, reembolsar, eliminar, exportar }
 
@@ -106,7 +107,7 @@ class _PageFondoState extends State<PageFondo> {
           onPressed: () {
             ScaffoldMessenger.of(context).removeCurrentSnackBar();
             // TODO: set carteraOn antes de navigator??
-            Navigator.of(context).pushNamed(RouteGenerator.carteraPage);
+            Navigator.of(context).pushNamed(RouteGenerator.carteraPage, arguments: true);
           },
         ),
         title: Text(fondoOn.name),

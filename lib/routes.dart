@@ -16,6 +16,7 @@ class RouteGenerator {
   static const String homePage = '/';
   static const String carteraPage = '/cartera';
   static const String fondoPage = '/fondo';
+  static const String fondoPageLeft = '/fondoLeft';
   static const String searchFondo = '/searchFondo';
   static const String inputFondo = '/inputFondo';
   static const String inputRange = '/inputRange';
@@ -24,21 +25,26 @@ class RouteGenerator {
   static const String aboutPage = '/about';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
-    //final args = settings.arguments;
+    final args = settings.arguments as bool?;
 
     switch (settings.name) {
       case homePage:
-        return MaterialPageRoute(builder: (context) => const PageHome());
+        //return MaterialPageRoute(builder: (context) => const PageHome());
+        return SlideRoute(page: const PageHome(), isBack: args);
       case carteraPage:
         //return MaterialPageRoute(builder: (context) => PageCartera(cartera: args as Cartera));
-        return MaterialPageRoute(builder: (context) => const PageCartera());
+        //return MaterialPageRoute(builder: (context) => const PageCartera());
+        //ScreenArguments argument = args as ScreenArguments;
+        //final args = ModalRoute.of(context)!.settings.arguments as ScreenArguments;
+        //return SlideRoute(page: const PageCartera(), isBack: args != null ? args as bool : null);
+        return SlideRoute(page: const PageCartera(), isBack: args);
+
       case fondoPage:
-        return MaterialPageRoute(builder: (BuildContext context) {
-          //ScreenArguments argument = args as ScreenArguments;
-          //final args = ModalRoute.of(context)!.settings.arguments as ScreenArguments;
-          //return PageFondo(cartera: args.cartera, fondo: args.fondo);
-          return const PageFondo();
-        });
+        //ScreenArguments argument = args as ScreenArguments;
+        //final args = ModalRoute.of(context)!.settings.arguments as ScreenArguments;
+        //return PageFondo(cartera: args.cartera, fondo: args.fondo);
+        //return MaterialPageRoute(builder: (BuildContext context) => const PageFondo());
+        return SlideRoute(page: const PageFondo(), isBack: args);
       /*return MaterialPageRoute(
             builder: (context) => PageFondo(
                   cartera: args as Cartera,
@@ -79,8 +85,69 @@ class RouteGenerator {
 }
 
 /*class ScreenArguments {
-  final Cartera cartera;
+  */ /*final Cartera cartera;
   final Fondo fondo;
-
-  ScreenArguments(this.cartera, this.fondo);
+  ScreenArguments(this.cartera, this.fondo);*/ /*
+  final bool toRight;
+  ScreenArguments(this.toRight);
 }*/
+
+class SlideRoute extends PageRouteBuilder {
+  final Widget page;
+  bool? isBack;
+  //final RouteSettings settings;
+  SlideRoute({required this.page, this.isBack})
+      : super(
+          pageBuilder: (BuildContext context, Animation<double> animation,
+              Animation<double> secondaryAnimation) {
+            return page;
+          },
+          /*transitionsBuilder: (BuildContext context, Animation<double> animation,
+              Animation<double> secondaryAnimation, Widget child) {
+            return ScaleTransition(
+              scale: Tween<double>(
+                begin: 0.0,
+                end: 1.0,
+              ).animate(
+                CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.fastOutSlowIn,
+                ),
+              ),
+              child: child,
+            );
+          },*/
+
+          transitionsBuilder: (BuildContext context, Animation<double> animation,
+              Animation<double> anotherAnimation, Widget child) {
+            animation = CurvedAnimation(
+              curve: Curves.fastOutSlowIn,
+              parent: animation,
+            );
+            return FadeTransition(
+              opacity: animation,
+              child: child,
+            );
+          },
+          /*transitionsBuilder: (BuildContext context, Animation<double> animation,
+              Animation<double> secondaryAnimation, Widget child) {
+            return SlideTransition(
+              position: Tween<Offset>(
+                */ /*begin: const Offset(1, 0),
+                end: Offset.zero,*/ /*
+                begin: isBack == true ? const Offset(-1, 0) : const Offset(1, 0),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(
+                  curve: isBack == true
+                      ? const Interval(0, 0.5, curve: Curves.easeOutCubic)
+                      : const Interval(0.5, 1, curve: Curves.easeOutCubic),
+                  parent: animation,
+                ),
+              ),
+              child: child,
+            );
+          },*/
+          //transitionDuration: const Duration(milliseconds: 2000),
+        );
+}

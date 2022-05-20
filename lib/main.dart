@@ -51,7 +51,6 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       onGenerateRoute: RouteGenerator.generateRoute,
-      //home: const PageHome(),
     );
   }
 }
