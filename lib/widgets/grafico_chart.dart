@@ -6,8 +6,6 @@ import '../models/carfoin_provider.dart';
 import '../utils/fecha_util.dart';
 
 class GraficoChart extends StatelessWidget {
-  //final List<Valor> valores;
-  //const GraficoChart({Key? key, required this.valores}) : super(key: key);
   const GraficoChart({Key? key}) : super(key: key);
 
   @override
@@ -53,11 +51,12 @@ class GraficoChart extends StatelessWidget {
       lineBarsData: [
         LineChartBarData(
           spots: spots,
-          color: Colors.blue,
+          color: const Color(0xFF2196F3),
           barWidth: 2,
           isCurved: false,
           dotData: FlDotData(show: true),
-          belowBarData: BarAreaData(show: true, color: Colors.blue.withOpacity(0.5)),
+          belowBarData: BarAreaData(show: true, color: const Color(0x802196F3)),
+          // Colors.blue.withOpacity(0.5)),
         ),
       ],
       minY: precioMin.floor().toDouble(),
@@ -67,7 +66,7 @@ class GraficoChart extends StatelessWidget {
       //maxY: (((((precioMax - precioMax.truncate()) * 10).floor()) / 10) + precioMax.floor()).ceilToDouble(),
       lineTouchData: LineTouchData(
         touchTooltipData: LineTouchTooltipData(
-          tooltipBgColor: Colors.black, // red.withOpacity(0.8),
+          tooltipBgColor: const Color(0xFF000000), // red.withOpacity(0.8),
           getTooltipItems: (touchedSpots) {
             return touchedSpots.map((LineBarSpot touchedSpot) {
               var epoch = touchedSpot.x.toInt();
@@ -147,7 +146,7 @@ class GraficoChart extends StatelessWidget {
         horizontalLines: [
           HorizontalLine(
             y: precioMedio,
-            color: Colors.blue,
+            color: const Color(0xFF2196F3),
             strokeWidth: 2,
             dashArray: [2, 2],
             label: HorizontalLineLabel(
@@ -155,7 +154,7 @@ class GraficoChart extends StatelessWidget {
               style: TextStyle(
                 //backgroundColor: Colors.black,
                 background: Paint()
-                  ..color = Colors.black
+                  ..color = const Color(0xFF000000)
                   ..strokeWidth = 13
                   ..style = PaintingStyle.stroke,
               ),
@@ -165,14 +164,14 @@ class GraficoChart extends StatelessWidget {
           ),
           HorizontalLine(
             y: precioMax,
-            color: Colors.green,
+            color: const Color(0xFF4CAF50),
             strokeWidth: 2,
             dashArray: [2, 2],
             label: HorizontalLineLabel(
               show: true,
               style: TextStyle(
                 background: Paint()
-                  ..color = Colors.black
+                  ..color = const Color(0xFF000000)
                   ..strokeWidth = 13
                   ..style = PaintingStyle.stroke,
               ),
@@ -182,14 +181,14 @@ class GraficoChart extends StatelessWidget {
           ),
           HorizontalLine(
             y: precioMin,
-            color: Colors.red,
+            color: const Color(0xFFF44336),
             strokeWidth: 2,
             dashArray: [2, 2],
             label: HorizontalLineLabel(
               show: true,
               style: TextStyle(
                 background: Paint()
-                  ..color = Colors.black
+                  ..color = const Color(0xFF000000)
                   ..strokeWidth = 13
                   ..style = PaintingStyle.stroke,
               ),

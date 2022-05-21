@@ -23,7 +23,6 @@ class PageHome extends StatefulWidget {
 class _PageHomeState extends State<PageHome> {
   late Sqlite _db;
   late TextEditingController _controller;
-
   var carteras = <Cartera>[];
   Map<String, List<Fondo>> mapCarteraFondos = {};
 
@@ -56,26 +55,22 @@ class _PageHomeState extends State<PageHome> {
     super.dispose();
   }
 
-  List<Column> _buildListItem(BuildContext context) {
-    final Map<String, IconData> mapItemMenu = {
-      Menu.renombrar.name: Icons.edit,
-      Menu.ordenar.name: Icons.sort_by_alpha,
-      Menu.exportar.name: Icons.save,
-      Menu.eliminar.name: Icons.delete_forever,
-    };
-    return [
-      for (var item in mapItemMenu.entries)
-        Column(children: [
+  PopupMenuItem<Menu> _buildMenuItem(Menu menu, IconData iconData, {bool divider = false}) {
+    return PopupMenuItem(
+      value: menu,
+      child: Column(
+        children: [
           ListTile(
-            leading: Icon(item.value, color: Colors.white),
+            leading: Icon(iconData, color: Colors.white),
             title: Text(
-              '${item.key[0].toUpperCase()}${item.key.substring(1)}',
+              '${menu.name[0].toUpperCase()}${menu.name.substring(1)}',
               style: const TextStyle(color: Colors.white),
             ),
           ),
-          if (item.key == Menu.ordenar.name) const PopupMenuDivider(height: 10),
-        ])
-    ];
+          if (divider) const Divider(height: 10, color: Colors.white), // PopMenuDivider
+        ],
+      ),
+    );
   }
 
   @override
@@ -105,14 +100,13 @@ class _PageHomeState extends State<PageHome> {
                     shape: const RoundedRectangleBorder(
                       borderRadius: BorderRadius.all(Radius.circular(8.0)),
                     ),
-                    itemBuilder: (ctx) {
-                      var listItemMenu = _buildListItem(context);
-                      return [
-                        for (var item in listItemMenu)
-                          PopupMenuItem(value: Menu.values[listItemMenu.indexOf(item)], child: item)
-                      ];
-                    },
-                    onSelected: (Menu item) async {
+                    itemBuilder: (ctx) => [
+                      _buildMenuItem(Menu.renombrar, Icons.edit, divider: true),
+                      _buildMenuItem(Menu.ordenar, Icons.sort_by_alpha, divider: true),
+                      _buildMenuItem(Menu.exportar, Icons.save, divider: true),
+                      _buildMenuItem(Menu.eliminar, Icons.delete_forever, divider: true),
+                    ],
+                    onSelected: (item) async {
                       //TODO: ACCIONES PENDIENTES
                       if (item == Menu.renombrar) {
                         print('RENAME');
@@ -170,6 +164,7 @@ class _PageHomeState extends State<PageHome> {
                               ),
                               trailing: CircleAvatar(child: Text('$nFondos')),
                               onTap: () {
+                                ScaffoldMessenger.of(context).removeCurrentSnackBar();
                                 //WidgetsBinding.instance?.addPostFrameCallback((_) {
                                 carfoin.setCartera = carteras[index];
                                 //Navigator.of(context).pushNamed(RouteGenerator.carteraPage);

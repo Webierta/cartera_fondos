@@ -11,9 +11,9 @@ import '../services/api_service.dart';
 import '../services/sqlite.dart';
 import '../utils/fecha_util.dart';
 import '../widgets/grafico_chart.dart';
+import '../widgets/loading_progress.dart';
 import '../widgets/main_fondo.dart';
 import '../widgets/tabla_fondo.dart';
-//import 'page_cartera.dart';
 
 enum Menu { editar, suscribir, reembolsar, eliminar, exportar }
 
@@ -24,29 +24,28 @@ class PageFondo extends StatefulWidget {
   State<PageFondo> createState() => _PageFondoState();
 }
 
-class _PageFondoState extends State<PageFondo> {
+class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMixin {
   late CarfoinProvider carfoin;
   late Cartera carteraOn;
   late Fondo fondoOn;
   late Sqlite _db;
   late ApiService apiService;
 
-  bool loading = true;
-  String msgLoading = '';
-  int _selectedIndex = 0;
+  //int _selectedIndex = 0;
+  //late bool _isLoading;
+  late TabController _tabController;
 
   @override
   void initState() {
+    //_isLoading = true;
+    _tabController = TabController(vsync: this, length: 3);
     WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
       carfoin = Provider.of<CarfoinProvider>(context, listen: false);
       //carteraOn = carfoin.getCartera!;
     });
-
     carteraOn = context.read<CarfoinProvider>().getCartera!;
     fondoOn = context.read<CarfoinProvider>().getFondo!;
 
-    loading = true;
-    msgLoading = 'Abriendo base de datos...';
     _db = Sqlite();
     _db.openDb().whenComplete(() async {
       await _updateValores();
@@ -55,179 +54,212 @@ class _PageFondoState extends State<PageFondo> {
     super.initState();
   }
 
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
   _updateValores() async {
+    /*if (!_isLoading) {
+      setState(() => _isLoading = true);
+    }*/
     await _db.getFondos(carteraOn);
-    setState(() => loading = true);
     await _db.createTableFondo(carteraOn, fondoOn);
-    setState(() => msgLoading = 'Cargando datos almacenados...');
     await _db.getValoresByOrder(carteraOn, fondoOn).whenComplete(() => setState(() {
-          loading = false;
-          msgLoading = '';
+          //_isLoading = false;
           carfoin.setValores = _db.dbValoresByOrder;
         }));
+    //TODO: SETSTATE ??
+    //carfoin.setValores = _db.dbValoresByOrder;
     //TODO: si moneda, lastPrecio y LastDate == null hacer un update
     //if (fondoOn.moneda == null) {}
     //TODO: check si data no es null ??
     //TODO: ordenar primero por date ??
   }
 
-  List<Column> _buildListMenu(BuildContext context) {
-    final Map<String, IconData> mapItemMenu = {
-      Menu.editar.name: Icons.edit,
-      Menu.suscribir.name: Icons.login,
-      Menu.reembolsar.name: Icons.logout,
-      Menu.eliminar.name: Icons.delete_forever,
-      Menu.exportar.name: Icons.download,
-    };
-    return [
-      for (var item in mapItemMenu.entries)
-        Column(children: [
-          ListTile(
-            leading: Icon(item.value, color: Colors.white),
-            title: Text(
-              '${item.key[0].toUpperCase()}${item.key.substring(1)}',
-              style: const TextStyle(color: Colors.white),
-            ),
-          ),
-          if (item.key == Menu.editar.name || item.key == Menu.reembolsar.name)
-            const PopupMenuDivider(height: 10),
-        ])
-    ];
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    const listaTabs = [MainFondo(), TablaFondo(), GraficoChart()];
-    const List<IconData> iconsTab = [Icons.assessment, Icons.table_rows_outlined, Icons.timeline];
-
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            ScaffoldMessenger.of(context).removeCurrentSnackBar();
-            // TODO: set carteraOn antes de navigator??
-            Navigator.of(context).pushNamed(RouteGenerator.carteraPage, arguments: true);
-          },
-        ),
-        title: Text(fondoOn.name),
-        actions: [
-          PopupMenuButton(
-            color: Colors.blue,
-            offset: Offset(0.0, AppBar().preferredSize.height),
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-            ),
-            itemBuilder: (ctx) {
-              var listItemMenu = _buildListMenu(context);
-              return [
-                for (var item in listItemMenu)
-                  PopupMenuItem(value: Menu.values[listItemMenu.indexOf(item)], child: item)
-              ];
-            },
-            onSelected: (Menu item) {
-              //TODO: ACCIONES PENDIENTES
-              if (item == Menu.editar) {
-                print('EDITAR');
-                //TODO SUBPAGE de operar con suscribir y reembolsar
-              } else if (item == Menu.suscribir) {
-                print('SUSCRIBIR');
-                print(carteraOn.name);
-                print(fondoOn.name);
-              } else if (item == Menu.reembolsar) {
-                print('REEMBOLSAR');
-              } else if (item == Menu.eliminar) {
-                _deleteConfirm(context);
-              } else if (item == Menu.exportar) {
-                print('EXPORTAR');
-              }
-            },
-          ),
-        ],
-      ),
-      body: loading
-          ? Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: Center(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const LinearProgressIndicator(),
-                    const SizedBox(height: 10),
-                    Text(msgLoading),
-                  ],
-                ),
-              ),
-            )
-          : listaTabs.elementAt(_selectedIndex),
-      bottomNavigationBar: BottomAppBar(
-        color: Colors.blue,
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 5,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            for (var icon in iconsTab)
-              Expanded(
-                child: IconButton(
-                  icon: Icon(
-                    icon,
-                    color: _selectedIndex == iconsTab.indexOf(icon) ? Colors.white : Colors.white38,
-                  ),
-                  //padding: const EdgeInsets.only(left: 32.0, right: 32.0),
-                  iconSize: 32,
-                  onPressed: () => setState(() => _selectedIndex = iconsTab.indexOf(icon)),
-                ),
-              ),
-            const Spacer(),
-          ],
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
-      floatingActionButton: SpeedDial(
-        //animatedIcon: AnimatedIcons.menu_close,
-        //activeIcon: Icons.refresh,
-        icon: Icons.refresh,
-        spacing: 8,
-        spaceBetweenChildren: 4,
-        overlayColor: Colors.blue,
-        overlayOpacity: 0.2,
+  PopupMenuItem<Menu> _buildMenuItem(Menu menu, IconData iconData, {bool divider = false}) {
+    return PopupMenuItem(
+      value: menu,
+      child: Column(
         children: [
-          SpeedDialChild(
-            child: const Icon(Icons.date_range), //dns // list  //
-            label: 'Descargar valores históricos',
-            backgroundColor: Colors.blue,
-            foregroundColor: Colors.white,
-            onTap: () {
-              ScaffoldMessenger.of(context).removeCurrentSnackBar();
-              _getRangeApi(context);
-            },
+          ListTile(
+            leading: Icon(iconData, color: const Color(0xFFFFFFFF)),
+            title: Text(
+              '${menu.name[0].toUpperCase()}${menu.name.substring(1)}',
+              style: const TextStyle(color: Color(0xFFFFFFFF)),
+            ),
           ),
-          SpeedDialChild(
-            child: const Icon(Icons.update), //dns // list  //
-            label: 'Actualizar último valor',
-            backgroundColor: Colors.blue,
-            foregroundColor: Colors.white,
-            onTap: () {
-              ScaffoldMessenger.of(context).removeCurrentSnackBar();
-              _getDataApi();
-            },
-          ),
+          if (divider) const Divider(height: 10, color: Color(0xFFFFFFFF)), // PopMenuDivider
         ],
       ),
     );
   }
 
-  void _getDataApi() async {
-    setState(() {
-      loading = true;
-      msgLoading = 'Conectando...';
-    });
-    final getDataApi = await apiService
-        .getDataApi(fondoOn.isin)
-        .whenComplete(() => setState(() => msgLoading = 'Datos descargados...'));
+  SpeedDialChild _buildSpeedDialChild(BuildContext context,
+      {required IconData icono, required String label, required Function action}) {
+    return SpeedDialChild(
+      child: Icon(icono),
+      label: label,
+      backgroundColor: const Color(0xFF2196F3),
+      foregroundColor: const Color(0xFFFFFFFF),
+      onTap: () async {
+        ScaffoldMessenger.of(context).removeCurrentSnackBar();
+        action(context);
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    //const listaTabs = [MainFondo(), TablaFondo(), GraficoChart()];
+    //const List<IconData> iconsTab = [Icons.assessment, Icons.table_rows_outlined, Icons.timeline];
+    //_isLoading ? const LoadingProgress(titulo: 'Cargando datos...')
+    return FutureBuilder<bool>(
+        future: _db.openDb(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const LoadingProgress(titulo: 'CARGANDO DATOS...');
+          }
+
+          if (snapshot.connectionState == ConnectionState.done) {
+            // DefaultTabController(length: 3, child: Scaffold
+            return Scaffold(
+              appBar: AppBar(
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).removeCurrentSnackBar();
+                    // TODO: set carteraOn antes de navigator??
+                    Navigator.of(context).pushNamed(RouteGenerator.carteraPage, arguments: true);
+                  },
+                ),
+                title: Text(fondoOn.name),
+                actions: [
+                  PopupMenuButton(
+                    color: const Color(0xFF2196F3),
+                    offset: Offset(0.0, AppBar().preferredSize.height),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(8.0)),
+                    ),
+                    itemBuilder: (ctx) => [
+                      _buildMenuItem(Menu.editar, Icons.edit, divider: true),
+                      _buildMenuItem(Menu.suscribir, Icons.login),
+                      _buildMenuItem(Menu.reembolsar, Icons.logout, divider: true),
+                      _buildMenuItem(Menu.eliminar, Icons.delete_forever),
+                      _buildMenuItem(Menu.exportar, Icons.download),
+                    ],
+                    onSelected: (Menu item) {
+                      //TODO: ACCIONES PENDIENTES
+                      if (item == Menu.editar) {
+                        print('EDITAR');
+                        //TODO SUBPAGE de operar con suscribir y reembolsar
+                      } else if (item == Menu.suscribir) {
+                        print('SUSCRIBIR');
+                        print(carteraOn.name);
+                        print(fondoOn.name);
+                      } else if (item == Menu.reembolsar) {
+                        print('REEMBOLSAR');
+                      } else if (item == Menu.eliminar) {
+                        _deleteConfirm(context);
+                      } else if (item == Menu.exportar) {
+                        print('EXPORTAR');
+                      }
+                    },
+                  ),
+                ],
+              ),
+              //body: listaTabs.elementAt(_selectedIndex),
+              body: TabBarView(
+                controller: _tabController,
+                children: const [MainFondo(), TablaFondo(), GraficoChart()],
+              ),
+              // bottomNavigationBar: BottomNavigationBar(
+              bottomNavigationBar: BottomAppBar(
+                color: const Color(0xFF0D47A1),
+                shape: const CircularNotchedRectangle(),
+                notchMargin: 5,
+                child: FractionallySizedBox(
+                  widthFactor: 0.7,
+                  alignment: FractionalOffset.bottomLeft,
+                  child: TabBar(
+                    controller: _tabController,
+                    labelColor: const Color(0xFFFFFFFF),
+                    unselectedLabelColor: const Color(0x62FFFFFF),
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    indicatorPadding: const EdgeInsets.all(5.0),
+                    indicatorColor: const Color(0xFF2196F3),
+                    //padding: EdgeInsets.only(right: 60),
+                    tabs: const [
+                      Tab(icon: Icon(Icons.assessment, size: 32)),
+                      Tab(icon: Icon(Icons.table_rows_outlined, size: 32)),
+                      Tab(icon: Icon(Icons.timeline, size: 32)),
+                    ],
+                  ),
+                ),
+              ),
+              /*bottomNavigationBar: BottomAppBar(
+              color: const Color(0xFF2196F3),
+              shape: const CircularNotchedRectangle(),
+              notchMargin: 5,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  for (var icon in iconsTab)
+                    Expanded(
+                      child: IconButton(
+                        icon: Icon(
+                          icon,
+                          color: _selectedIndex == iconsTab.indexOf(icon)
+                              ? const Color(0xFFFFFFFF)
+                              : const Color(0x62FFFFFF), //Colors.white38,
+                        ),
+                        //padding: const EdgeInsets.only(left: 32.0, right: 32.0),
+                        iconSize: 32,
+                        onPressed: () {
+                          setState(() {
+                            _selectedIndex = iconsTab.indexOf(icon);
+                          });
+                        },
+                      ),
+                    ),
+                  const Spacer(),
+                ],
+              ),
+            ),*/
+              floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
+              floatingActionButton: SpeedDial(
+                //animatedIcon: AnimatedIcons.menu_close,
+                //activeIcon: Icons.refresh,
+                icon: Icons.refresh,
+                spacing: 8,
+                spaceBetweenChildren: 4,
+                overlayColor: Colors.blue,
+                overlayOpacity: 0.2,
+                children: [
+                  _buildSpeedDialChild(context,
+                      icono: Icons.date_range,
+                      label: 'Descargar valores históricos',
+                      action: _getRangeApi),
+                  _buildSpeedDialChild(context,
+                      icono: Icons.update, label: 'Actualizar último valor', action: _getDataApi),
+                ],
+              ),
+            );
+          }
+          return const LoadingProgress(titulo: 'CARGANDO DATOS...');
+        });
+    //} DONE
+    //} DONE
+    //return const LoadingProgress(titulo: 'Recuperando valores...', subtitulo: 'Cargando...');
+  }
+
+  void _getDataApi(BuildContext context) async {
+    /*if (!_isLoading) {
+      setState(() => _isLoading = true);
+    }*/
+    final getDataApi = await apiService.getDataApi(fondoOn.isin);
     if (getDataApi != null) {
       var newValor = Valor(date: getDataApi.epochSecs, precio: getDataApi.price);
       // TODO: valor divisa ??
@@ -253,15 +285,18 @@ class _PageFondoState extends State<PageFondo> {
       await _db.insertFondo(carteraOn, fondoOn);
       await _db.insertVL(carteraOn, fondoOn, newValor);
       //.whenComplete(() => setState(() => msgLoading = 'Almacenando datos...'));
-      setState(() {
+      /*setState(() {
         msgLoading = 'Datos almacenados...';
-      });
+      });*/
       await _updateValores();
+      /*if (_isLoading) {
+        setState(() => _isLoading = false);
+      }*/
       // TODO: BANNER
       //print(dataApi?.price);
     } else {
-      setState(() => loading = false);
-      print('ERROR GET DATAAPI');
+      //setState(() => loading = false);
+      //setState(() => _isLoading = false);
       _showMsg(msg: 'Error en la descarga de datos.', color: Colors.red);
     }
   }
@@ -274,35 +309,32 @@ class _PageFondoState extends State<PageFondo> {
       //String to = DateFormat('yyyy-MM-dd').format(range.end);
       String from = FechaUtil.dateToString(date: range.start, formato: 'yyyy-MM-dd');
       String to = FechaUtil.dateToString(date: range.end, formato: 'yyyy-MM-dd');
-      setState(() {
+      /*setState(() {
         loading = true;
         msgLoading = 'Conectando...';
-      });
-      final getDateApiRange = await apiService
-          .getDataApiRange(fondoOn.isin, to, from)
-          ?.whenComplete(() => setState(() => msgLoading = 'Descargando datos...'));
+      });*/
+      //setState(() => _isLoading = true);
+      final getDateApiRange = await apiService.getDataApiRange(fondoOn.isin, to, from);
+      //?.whenComplete(() => setState(() => msgLoading = 'Descargando datos...'));
       //final getDateApiRange = await apiService.getDataApiRange(fondoOn.isin, to, from);
       var newListValores = <Valor>[];
       if (getDateApiRange != null) {
         for (var dataApi in getDateApiRange) {
           newListValores.add(Valor(date: dataApi.epochSecs, precio: dataApi.price));
         }
-
-        await _db
-            .insertListVL(carteraOn, fondoOn, newListValores)
-            .whenComplete(() => setState(() => msgLoading = 'Almacenando datos...'));
-
+        await _db.insertListVL(carteraOn, fondoOn, newListValores);
+        //.whenComplete(() => setState(() => msgLoading = 'Almacenando datos...'));
         await _updateValores();
-        /*setState(() {
-          loading = false;
-          msgLoading = '';
-        });*/
+        /*if (_isLoading) {
+          setState(() => _isLoading = false);
+        }*/
         // TODO set last valor (date y precio) desde VALORES cada vez en _updateValores
         //await _compareLastValor();
       } else {
-        setState(() => loading = false);
+        /*if (_isLoading) {
+          setState(() => _isLoading = false);
+        }*/
         _showMsg(msg: 'Error en la descarga de datos.', color: Colors.red);
-        print('ERROR GET DATA API RANGE');
       }
     }
   }
@@ -360,15 +392,17 @@ class _PageFondoState extends State<PageFondo> {
                 TextButton(
                   child: const Text('ACEPTAR'),
                   style: TextButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    primary: Colors.white,
+                    backgroundColor: const Color(0xFFF44336),
+                    primary: const Color(0xFFFFFFFF),
                     //textStyle: const TextStyle(color: Colors.white),
                   ),
                   onPressed: () async {
                     await _db.deleteAllValoresInFondo(carteraOn, fondoOn);
                     await _updateValores();
-                    //Navigator.of(context).pop();
-                    Navigator.of(context).pushNamed(RouteGenerator.fondoPage);
+                    ScaffoldMessenger.of(context).removeCurrentSnackBar();
+                    //Navigator.of(context).pushNamed(RouteGenerator.fondoPage);
+                    Navigator.of(context).pop();
+                    //_tabController.animateTo(_tabController.index);
                   },
                 ),
               ],

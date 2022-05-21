@@ -105,10 +105,8 @@ class MainFondo extends StatelessWidget {
                         'Subscribe participaciones de este Fondo para seguir el rendimiento de tu inversión'),
                 // TODO: nueva ventana con Fecha / participaciones y VL
                 trailing: IconButton(
-                  icon: const Icon(Icons.shopping_cart, color: Colors.blue),
-                  onPressed: () {
-                    Navigator.of(context).pushNamed(RouteGenerator.mercadoPage);
-                  },
+                  icon: const Icon(Icons.shopping_cart, color: Color(0xFF2196F3)),
+                  onPressed: () => Navigator.of(context).pushNamed(RouteGenerator.mercadoPage),
                 ),
               ),
               const SizedBox(height: 10),

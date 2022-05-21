@@ -25,9 +25,7 @@ class _PageCarteraState extends State<PageCartera> {
   late Cartera carteraOn;
   late Sqlite _db;
   late ApiService apiService;
-
   var fondos = <Fondo>[];
-
   final GlobalKey _dialogKey = GlobalKey();
   String _loadingText = '';
 
@@ -59,24 +57,40 @@ class _PageCarteraState extends State<PageCartera> {
     fondo.addValores(_db.dbValoresByOrder);
   }
 
-  // REFACTORIZAR WIDGET
-  List<Column> _buildListMenu(BuildContext context) {
-    final Map<String, IconData> mapItemMenu = {
-      MenuCartera.ordenar.name: Icons.sort_by_alpha,
-      MenuCartera.eliminar.name: Icons.delete_forever,
-    };
-    return [
-      for (var item in mapItemMenu.entries)
-        Column(children: [
+  PopupMenuItem<MenuCartera> _buildMenuItem(MenuCartera menu, IconData iconData,
+      {bool divider = false}) {
+    return PopupMenuItem(
+      value: menu,
+      child: Column(
+        children: [
           ListTile(
-            leading: Icon(item.value, color: Colors.white),
+            leading: Icon(iconData, color: Colors.white),
             title: Text(
-              '${item.key[0].toUpperCase()}${item.key.substring(1)}',
+              '${menu.name[0].toUpperCase()}${menu.name.substring(1)}',
               style: const TextStyle(color: Colors.white),
             ),
           ),
-        ]),
-    ];
+          if (divider) const Divider(height: 10, color: Colors.white), // PopMenuDivider
+        ],
+      ),
+    );
+  }
+
+  SpeedDialChild _buildSpeedDialChild(BuildContext context,
+      {required IconData icono, required String label, required String page}) {
+    return SpeedDialChild(
+      child: Icon(icono),
+      label: label,
+      backgroundColor: Colors.blue,
+      foregroundColor: Colors.white,
+      onTap: () async {
+        ScaffoldMessenger.of(context).removeCurrentSnackBar();
+        final newFondo = await Navigator.of(context).pushNamed(page);
+        newFondo != null
+            ? _addFondo(newFondo as Fondo)
+            : _showMsg(msg: 'Sin cambios en la cartera.');
+      },
+    );
   }
 
   @override
@@ -109,7 +123,7 @@ class _PageCarteraState extends State<PageCartera> {
                   icon: const Icon(Icons.arrow_back),
                   onPressed: () {
                     ScaffoldMessenger.of(context).removeCurrentSnackBar();
-                    Navigator.of(context).pushNamed(RouteGenerator.homePage, arguments: true);
+                    Navigator.of(context).pushNamed(RouteGenerator.homePage);
                   },
                 ),
                 title: Text(carteraOn.name),
@@ -124,7 +138,7 @@ class _PageCarteraState extends State<PageCartera> {
                       shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.circular(8.0)),
                       ),
-                      itemBuilder: (ctx) {
+                      /*itemBuilder: (ctx) {
                         var listItemMenu = _buildListMenu(context);
                         return [
                           for (var item in listItemMenu)
@@ -133,7 +147,11 @@ class _PageCarteraState extends State<PageCartera> {
                               child: item,
                             )
                         ];
-                      },
+                      },*/
+                      itemBuilder: (ctx) => [
+                            _buildMenuItem(MenuCartera.ordenar, Icons.sort_by_alpha),
+                            _buildMenuItem(MenuCartera.eliminar, Icons.delete_forever),
+                          ],
                       onSelected: (MenuCartera item) async {
                         if (item == MenuCartera.ordenar) {
                           _sortFondos();
@@ -153,34 +171,14 @@ class _PageCarteraState extends State<PageCartera> {
                 overlayColor: Colors.blue,
                 overlayOpacity: 0.2,
                 children: [
-                  SpeedDialChild(
-                    child: const Icon(Icons.search),
-                    label: 'Buscar online por ISIN',
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    onTap: () async {
-                      ScaffoldMessenger.of(context).removeCurrentSnackBar();
-                      final newFondo =
-                          await Navigator.of(context).pushNamed(RouteGenerator.inputFondo);
-                      newFondo != null
-                          ? _addFondo(newFondo as Fondo)
-                          : _showMsg(msg: 'Sin cambios en la cartera.');
-                    },
-                  ),
-                  SpeedDialChild(
-                    child: const Icon(Icons.storage), //dns // list  //
-                    label: 'Base de Datos local',
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    onTap: () async {
-                      ScaffoldMessenger.of(context).removeCurrentSnackBar();
-                      final newFondo =
-                          await Navigator.of(context).pushNamed(RouteGenerator.searchFondo);
-                      newFondo != null
-                          ? _addFondo(newFondo as Fondo)
-                          : _showMsg(msg: 'Sin cambios en la cartera.');
-                    },
-                  ),
+                  _buildSpeedDialChild(context,
+                      icono: Icons.search,
+                      label: 'Buscar online por ISIN',
+                      page: RouteGenerator.inputFondo),
+                  _buildSpeedDialChild(context,
+                      icono: Icons.storage,
+                      label: 'Base de Datos local',
+                      page: RouteGenerator.searchFondo),
                 ],
               ),
               body: fondos.isEmpty
@@ -216,11 +214,11 @@ class _PageCarteraState extends State<PageCartera> {
                               ),
                               onTap: () {
                                 // TODO : revisar
-                                WidgetsBinding.instance?.addPostFrameCallback((_) {
-                                  ScaffoldMessenger.of(context).removeCurrentSnackBar();
-                                  carfoin.setFondo = fondos[index];
-                                  Navigator.of(context).pushNamed(RouteGenerator.fondoPage);
-                                });
+                                //WidgetsBinding.instance?.addPostFrameCallback((_) {
+                                ScaffoldMessenger.of(context).removeCurrentSnackBar();
+                                carfoin.setFondo = fondos[index];
+                                Navigator.of(context).pushNamed(RouteGenerator.fondoPage);
+                                //});
                               },
                             ),
                           ),

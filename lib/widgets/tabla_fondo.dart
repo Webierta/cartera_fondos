@@ -7,8 +7,6 @@ import '../models/valor.dart';
 import '../utils/fecha_util.dart';
 
 class TablaFondo extends StatefulWidget {
-  //final List<Valor> valores;
-  //const TablaFondo({Key? key, required this.valores}) : super(key: key);
   const TablaFondo({Key? key}) : super(key: key);
 
   @override
@@ -54,7 +52,7 @@ class _TablaFondoState extends State<TablaFondo> {
         return Text(
           dif.toStringAsFixed(2),
           textAlign: TextAlign.center,
-          style: TextStyle(color: dif < 0 ? Colors.red : Colors.green),
+          style: TextStyle(color: dif < 0 ? const Color(0xFFF44336) : const Color(0xFF4CAF50)),
         );
       }
       return const Text('');
@@ -66,7 +64,7 @@ class _TablaFondoState extends State<TablaFondo> {
         : Column(
             children: [
               Container(
-                color: Colors.amber,
+                color: const Color(0xFFFFC107),
                 child: Row(
                   children: [
                     Expanded(
@@ -102,8 +100,8 @@ class _TablaFondoState extends State<TablaFondo> {
               Expanded(
                 child: ListView.separated(
                   padding: const EdgeInsets.only(top: 14),
-                  separatorBuilder: (context, index) =>
-                      const Divider(color: Colors.grey, height: 24, indent: 10, endIndent: 10),
+                  separatorBuilder: (context, index) => const Divider(
+                      color: Color(0xFF9E9E9E), height: 24, indent: 10, endIndent: 10),
                   shrinkWrap: true,
                   physics: const ClampingScrollPhysics(),
                   itemCount: valoresOn.length,

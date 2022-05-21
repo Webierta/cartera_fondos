@@ -16,7 +16,6 @@ class RouteGenerator {
   static const String homePage = '/';
   static const String carteraPage = '/cartera';
   static const String fondoPage = '/fondo';
-  static const String fondoPageLeft = '/fondoLeft';
   static const String searchFondo = '/searchFondo';
   static const String inputFondo = '/inputFondo';
   static const String inputRange = '/inputRange';
@@ -25,45 +24,52 @@ class RouteGenerator {
   static const String aboutPage = '/about';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
-    final args = settings.arguments as bool?;
+    //final args = settings.arguments as bool?;
 
     switch (settings.name) {
       case homePage:
         //return MaterialPageRoute(builder: (context) => const PageHome());
-        return SlideRoute(page: const PageHome(), isBack: args);
+        //return SlideRoute(page: const PageHome(), isBack: args);
+        return AnimatedRoute(const PageHome());
       case carteraPage:
         //return MaterialPageRoute(builder: (context) => PageCartera(cartera: args as Cartera));
         //return MaterialPageRoute(builder: (context) => const PageCartera());
         //ScreenArguments argument = args as ScreenArguments;
         //final args = ModalRoute.of(context)!.settings.arguments as ScreenArguments;
         //return SlideRoute(page: const PageCartera(), isBack: args != null ? args as bool : null);
-        return SlideRoute(page: const PageCartera(), isBack: args);
+        return AnimatedRoute(const PageCartera());
 
       case fondoPage:
         //ScreenArguments argument = args as ScreenArguments;
         //final args = ModalRoute.of(context)!.settings.arguments as ScreenArguments;
         //return PageFondo(cartera: args.cartera, fondo: args.fondo);
         //return MaterialPageRoute(builder: (BuildContext context) => const PageFondo());
-        return SlideRoute(page: const PageFondo(), isBack: args);
+        return AnimatedRoute(const PageFondo());
       /*return MaterialPageRoute(
             builder: (context) => PageFondo(
                   cartera: args as Cartera,
                   fondo: args as Fondo,
                 ));*/
       case searchFondo:
-        return MaterialPageRoute(builder: (context) => const PageSearchFondo());
+        //return MaterialPageRoute(builder: (context) => const PageSearchFondo());
+        return AnimatedRoute(const PageSearchFondo());
       case inputFondo:
         //return MaterialPageRoute(builder: (context) => PageInputFondo(cartera: args as Cartera));
-        return MaterialPageRoute(builder: (context) => const PageInputFondo());
+        //return MaterialPageRoute(builder: (context) => const PageInputFondo());
+        return AnimatedRoute(const PageInputFondo());
       case inputRange:
         //return MaterialPageRoute(builder: (context) => PageInputRange(fondo: args as Fondo));
-        return MaterialPageRoute(builder: (context) => const PageInputRange());
+        //return MaterialPageRoute(builder: (context) => const PageInputRange());
+        return AnimatedRoute(const PageInputRange());
       case mercadoPage:
-        return MaterialPageRoute(builder: (context) => const PageMercado());
+        //return MaterialPageRoute(builder: (context) => const PageMercado());
+        return AnimatedRoute(const PageMercado());
       case infoPage:
-        return MaterialPageRoute(builder: (context) => const PageInfo());
+        //return MaterialPageRoute(builder: (context) => const PageInfo());
+        return AnimatedRoute(const PageInfo());
       case aboutPage:
-        return MaterialPageRoute(builder: (context) => const PageAbout());
+        //return MaterialPageRoute(builder: (context) => const PageAbout());
+        return AnimatedRoute(const PageAbout());
       default:
         return _errorRoute();
     }
@@ -92,11 +98,12 @@ class RouteGenerator {
   ScreenArguments(this.toRight);
 }*/
 
-class SlideRoute extends PageRouteBuilder {
+class AnimatedRoute extends PageRouteBuilder {
   final Widget page;
-  bool? isBack;
+  //bool? isBack;
   //final RouteSettings settings;
-  SlideRoute({required this.page, this.isBack})
+  //SlideRoute({required this.page, this.isBack})
+  AnimatedRoute(this.page)
       : super(
           pageBuilder: (BuildContext context, Animation<double> animation,
               Animation<double> secondaryAnimation) {
@@ -121,7 +128,7 @@ class SlideRoute extends PageRouteBuilder {
           transitionsBuilder: (BuildContext context, Animation<double> animation,
               Animation<double> anotherAnimation, Widget child) {
             animation = CurvedAnimation(
-              curve: Curves.fastOutSlowIn,
+              curve: Curves.linear,
               parent: animation,
             );
             return FadeTransition(
