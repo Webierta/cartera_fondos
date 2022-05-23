@@ -53,6 +53,13 @@ class _MercadoState extends State<PageMercado> {
     super.initState();
   }
 
+  _insertValor(Valor valor) async {
+    //var tableFondo = fondoOn.isin + '_' + '${carteraOn.id}';
+    var tableFondo = '_${carteraOn.id}' + fondoOn.isin;
+    Map<String, dynamic> row = {'date': valor.date, 'precio': valor.precio};
+    await _db.insertVL(tableFondo, row);
+  }
+
   _resetControllers() {
     _dateController.text = FechaUtil.epochToString(DateTime.now().millisecondsSinceEpoch ~/ 1000);
     _partController.text = '0.0';
@@ -296,7 +303,8 @@ class _MercadoState extends State<PageMercado> {
       Valor newValor = Valor(date: _date, precio: _precio);
       // TODO: valores duplicados ??
       // CHECK SI NO EXISTE (Y TAMBIEN CHECK DESDE PAGE FONDO)
-      await _db.insertVL(carteraOn, fondoOn, newValor);
+      //await _db.insertVL(carteraOn, fondoOn, newValor);
+      await _insertValor(newValor);
       //await _compareLastValor();
       // TODO: remove or hide ??
       ScaffoldMessenger.of(context).removeCurrentSnackBar();

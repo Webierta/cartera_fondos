@@ -4,8 +4,9 @@ import 'fondo.dart';
 
 class Cartera with ChangeNotifier {
   //TODO: añadir string nameInput
+  final int id;
   final String name;
-  Cartera({required this.name});
+  Cartera({required this.id, required this.name});
 
   /*final String input;
   String name = '';
@@ -18,8 +19,22 @@ class Cartera with ChangeNotifier {
   }*/
 
   Map<String, dynamic> toMap() {
-    return {'name': name};
+    return {'id': id, 'name': name};
   }
+
+  Cartera.fromMap(Map<String, dynamic> item)
+      : id = item['id'],
+        name = item['name'];
+
+  Cartera fromJson(json) {
+    return Cartera(id: json['id'], name: json['name']);
+  }
+
+  /*fromMap(Map<String, dynamic> item) {
+    return
+  }
+      : id = item['id'],
+        name = item['name'];*/
 
   final _fondos = <Fondo>[];
   //List get fondos => _fondos;

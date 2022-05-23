@@ -41,20 +41,72 @@ class _PageCarteraState extends State<PageCartera> {
   }
 
   _updateFondos() async {
-    await _db.getFondos(carteraOn);
+    //var tableCartera = '_$carteraOn.id';
+    //await _db.getFondos(tableCartera);
+    await _getFondos();
     //setState(() => fondos = _db.dbFondos);
     for (var fondo in _db.dbFondos) {
-      await _db.createTableFondo(carteraOn, fondo);
+      //await _db.createTableFondo(carteraOn, fondo);
+      //var tableFondo = fondo.isin + '_' + '${carteraOn.id}';
+      var tableFondo = '_${carteraOn.id}' + fondo.isin;
+      await _db.createTableFondo(tableFondo);
       await _getValoresFondo(fondo);
     }
     setState(() => fondos = _db.dbFondos);
   }
 
+  _getFondos() async {
+    var tableCartera = '_${carteraOn.id}';
+    await _db.getFondos(tableCartera);
+  }
+
+  _createTableFondo(Fondo fondo) async {
+    //var tableFondo = fondo.isin + '_' + '${carteraOn.id}';
+    var tableFondo = '_${carteraOn.id}' + fondo.isin;
+    await _db.createTableFondo(tableFondo);
+  }
+
+  _insertFondo(Fondo fondo) async {
+    var tableCartera = '_${carteraOn.id}';
+    Map<String, dynamic> row = {'isin': fondo.isin, 'name': fondo.name, 'divisa': fondo.divisa};
+    await _db.insertFondo(tableCartera, row);
+  }
+
+  _insertValor(Fondo fondo, Valor valor) async {
+    //var tableFondo = fondo.isin + '_' + '${carteraOn.id}';
+    var tableFondo = '_${carteraOn.id}' + fondo.isin;
+    Map<String, dynamic> row = {'date': valor.date, 'precio': valor.precio};
+    await _db.insertVL(tableFondo, row);
+  }
+
   _getValoresFondo(Fondo fondo) async {
-    await _db.getValoresByOrder(carteraOn, fondo);
+    //var tableFondo = fondo.isin + '_' + '${carteraOn.id}';
+    var tableFondo = '_${carteraOn.id}' + fondo.isin;
+    await _db.getValoresByOrder(tableFondo);
     // TODO: setstate necesario????
     //setState(() => fondo.addValores(_db.dbValoresByOrder));
     fondo.addValores(_db.dbValoresByOrder);
+  }
+
+  /*_deleteAllValores(Fondo fondo) async {
+    //var tableFondo = fondo.isin + '_' + '${carteraOn.id}';
+    var tableFondo = '_${carteraOn.id}' + fondo.isin;
+    //await _db.deleteAllValores(tableFondo);
+    await _db.eliminaTabla(tableFondo);
+  }*/
+
+  _deleteFondo(Fondo fondo) async {
+    var tableFondo = '_${carteraOn.id}' + fondo.isin;
+    await _db.eliminaTabla(tableFondo);
+    // TODO: get valores y drop ??
+    var tableCartera = '_${carteraOn.id}';
+    await _db.deleteFondo(tableCartera, fondo);
+  }
+
+  _deleteAllFondos() async {
+    var tableCartera = '_${carteraOn.id}';
+    //await _db.deleteAllFondos(tableCartera);
+    await _db.eliminaTabla(tableCartera);
   }
 
   PopupMenuItem<MenuCartera> _buildMenuItem(MenuCartera menu, IconData iconData,
@@ -81,8 +133,8 @@ class _PageCarteraState extends State<PageCartera> {
     return SpeedDialChild(
       child: Icon(icono),
       label: label,
-      backgroundColor: Colors.blue,
-      foregroundColor: Colors.white,
+      backgroundColor: const Color(0xFF2196F3),
+      foregroundColor: const Color(0xFFFFFFFF),
       onTap: () async {
         ScaffoldMessenger.of(context).removeCurrentSnackBar();
         final newFondo = await Navigator.of(context).pushNamed(page);
@@ -206,8 +258,8 @@ class _PageCarteraState extends State<PageCartera> {
                                       _getDiferencia(fondos[index])!.toStringAsFixed(2),
                                       style: TextStyle(
                                         color: _getDiferencia(fondos[index])! < 0
-                                            ? Colors.red
-                                            : Colors.green,
+                                            ? const Color(0xFFF44336)
+                                            : const Color(0xFF4CAF50),
                                       ),
                                     ),
                                 ],
@@ -232,8 +284,10 @@ class _PageCarteraState extends State<PageCartera> {
                             ),
                           ),
                           onDismissed: (_) async {
-                            _db.deleteAllValoresInFondo(carteraOn, fondos[index]);
-                            _db.deleteFondoInCartera(carteraOn, fondos[index]);
+                            //_db.deleteAllValoresInFondo(carteraOn, fondos[index]);
+                            //_db.deleteFondoInCartera(carteraOn, fondos[index]);
+                            //await _deleteAllValores(fondos[index]);
+                            await _deleteFondo(fondos[index]);
                             await _updateFondos();
                           },
                         );
@@ -281,12 +335,14 @@ class _PageCarteraState extends State<PageCartera> {
   Future<Map<String, Icon>> _updateAll(BuildContext context) async {
     _setStateDialog('Conectando...');
     var mapResultados = <String, Icon>{};
-    await _db.getFondos(carteraOn);
+    //await _db.getFondos(carteraOn.id);
+    await _getFondos();
     if (_db.dbFondos.isNotEmpty) {
       for (var fondo in _db.dbFondos) {
         _setStateDialog(fondo.name);
         //TODO: NECESARIO ?
-        await _db.createTableFondo(carteraOn, fondo);
+        //await _db.createTableFondo(carteraOn, fondo);
+        await _createTableFondo(fondo);
         final getDataApi = await apiService.getDataApi(fondo.isin);
         if (getDataApi != null) {
           var newValor = Valor(date: getDataApi.epochSecs, precio: getDataApi.price);
@@ -294,8 +350,10 @@ class _PageCarteraState extends State<PageCartera> {
           // var newMoneda = getDataApi.market;
           //await _db.insertDataApi(carteraOn, fondo,
           //    moneda: newMoneda, lastPrecio: newLastPrecio, lastDate: newLastDate);
-          await _db.insertFondo(carteraOn, fondo);
-          await _db.insertVL(carteraOn, fondo, newValor);
+          //await _db.insertFondo(carteraOn, fondo);
+          //await _db.insertVL(carteraOn, fondo, newValor);
+          await _insertFondo(fondo);
+          await _insertValor(fondo, newValor);
           mapResultados[fondo.name] = const Icon(Icons.check_box, color: Colors.green);
         } else {
           mapResultados[fondo.name] = const Icon(Icons.disabled_by_default, color: Colors.red);
@@ -454,7 +512,8 @@ class _PageCarteraState extends State<PageCartera> {
         color: Colors.red,
       );
     } else {
-      await _db.insertFondo(carteraOn, newFondo);
+      //await _db.insertFondo(carteraOn, newFondo);
+      await _insertFondo(newFondo);
       await _updateFondos();
       _showMsg(msg: 'Fondo añadido');
     }
@@ -467,9 +526,11 @@ class _PageCarteraState extends State<PageCartera> {
     if (listEquals(fondos, fondosSort)) {
       _showMsg(msg: 'Nada que hacer: Los fondos ya están ordenados por nombre.');
     } else {
-      await _db.deleteAllFondosInCartera(carteraOn);
+      //await _db.deleteAllFondosInCartera(carteraOn);
+      await _deleteAllFondos();
       for (var fondo in fondosSort) {
-        await _db.insertFondo(carteraOn, fondo);
+        //await _db.insertFondo(carteraOn, fondo);
+        await _insertFondo(fondo);
       }
       await _updateFondos();
     }
@@ -494,14 +555,16 @@ class _PageCarteraState extends State<PageCartera> {
                 TextButton(
                   child: const Text('ACEPTAR'),
                   style: TextButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    primary: Colors.white,
+                    backgroundColor: const Color(0xFFF44336),
+                    primary: const Color(0xFFFFFFFF),
                     //textStyle: const TextStyle(color: Colors.white),
                   ),
                   onPressed: () async {
                     for (var fondo in _db.dbFondos) {
-                      await _db.deleteAllValoresInFondo(carteraOn, fondo);
-                      await _db.deleteFondoInCartera(carteraOn, fondo);
+                      //await _db.deleteAllValoresInFondo(carteraOn, fondo);
+                      //await _db.deleteFondoInCartera(carteraOn, fondo);
+                      //await _deleteAllValores(fondo);
+                      await _deleteFondo(fondo);
                     }
                     await _updateFondos();
                     Navigator.of(context).pop();

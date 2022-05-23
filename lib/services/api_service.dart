@@ -89,6 +89,7 @@ class ApiService {
       if (response.body.contains('Access denied')) {
         // status = Status.accessDenied;
         //TODO: status Code == 200 pero sin resultados
+        // else if (response.statusCode != 200)
       } else if (response.statusCode == 200) {
         //return DataApi.fromJson(jsonDecode(response.body));
         return dataApiFromJson(response.body);

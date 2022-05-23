@@ -64,10 +64,17 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
     /*if (!_isLoading) {
       setState(() => _isLoading = true);
     }*/
-    await _db.getFondos(carteraOn);
-    await _db.createTableFondo(carteraOn, fondoOn);
-    await _db.getValoresByOrder(carteraOn, fondoOn).whenComplete(() => setState(() {
+    //await _db.getFondos(carteraOn.id);
+    await _getFondos();
+    //var tableFondo = fondoOn.isin + '_' + '${carteraOn.id}';
+    var tableFondo = '_${carteraOn.id}' + fondoOn.isin;
+    //await _db.createTableFondo(carteraOn, fondoOn);
+    await _db.createTableFondo(tableFondo);
+    /*await _db.getValoresByOrder(carteraOn, fondoOn).whenComplete(() => setState(() {
           //_isLoading = false;
+          carfoin.setValores = _db.dbValoresByOrder;
+        }));*/
+    await _db.getValoresByOrder(tableFondo).whenComplete(() => setState(() {
           carfoin.setValores = _db.dbValoresByOrder;
         }));
     //TODO: SETSTATE ??
@@ -76,6 +83,44 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
     //if (fondoOn.moneda == null) {}
     //TODO: check si data no es null ??
     //TODO: ordenar primero por date ??
+  }
+
+  _getFondos() async {
+    var tableCartera = '_${carteraOn.id}';
+    await _db.getFondos(tableCartera);
+  }
+
+  _insertFondo() async {
+    var tableCartera = '_${carteraOn.id}';
+    Map<String, dynamic> row = {
+      'isin': fondoOn.isin,
+      'name': fondoOn.name,
+      'divisa': fondoOn.divisa
+    };
+    await _db.insertFondo(tableCartera, row);
+  }
+
+  _insertValor(Valor valor) async {
+    //var tableFondo = fondoOn.isin + '_' + '${carteraOn.id}';
+    var tableFondo = '_${carteraOn.id}' + fondoOn.isin;
+    Map<String, dynamic> row = {'date': valor.date, 'precio': valor.precio};
+    await _db.insertVL(tableFondo, row);
+  }
+
+  _insertValores(List<Valor> valores) async {
+    //var tableFondo = fondoOn.isin + '_' + '${carteraOn.id}';
+    var tableFondo = '_${carteraOn.id}' + fondoOn.isin;
+    for (var valor in valores) {
+      Map<String, dynamic> row = {'date': valor.date, 'precio': valor.precio};
+      await _db.insertVL(tableFondo, row);
+    }
+  }
+
+  _deleteAllValores() async {
+    //var tableFondo = fondoOn.isin + '_' + '${carteraOn.id}';
+    var tableFondo = '_${carteraOn.id}' + fondoOn.isin;
+    //await _db.deleteAllValores(tableFondo);
+    await _db.eliminaTabla(tableFondo);
   }
 
   PopupMenuItem<Menu> _buildMenuItem(Menu menu, IconData iconData, {bool divider = false}) {
@@ -90,7 +135,7 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
               style: const TextStyle(color: Color(0xFFFFFFFF)),
             ),
           ),
-          if (divider) const Divider(height: 10, color: Color(0xFFFFFFFF)), // PopMenuDivider
+          if (divider) const Divider(color: Color(0xFFFFFFFF)), // PopMenuDivider
         ],
       ),
     );
@@ -282,8 +327,10 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
       fondoOn.divisa = getDataApi.market;
       //Fondo newFondo = fondoOn;
       //newFondo.divisa = getDataApi.market;
-      await _db.insertFondo(carteraOn, fondoOn);
-      await _db.insertVL(carteraOn, fondoOn, newValor);
+      //await _db.insertFondo(carteraOn, fondoOn);
+      //await _db.insertVL(carteraOn, fondoOn, newValor);
+      await _insertFondo();
+      await _insertValor(newValor);
       //.whenComplete(() => setState(() => msgLoading = 'Almacenando datos...'));
       /*setState(() {
         msgLoading = 'Datos almacenados...';
@@ -322,8 +369,9 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
         for (var dataApi in getDateApiRange) {
           newListValores.add(Valor(date: dataApi.epochSecs, precio: dataApi.price));
         }
-        await _db.insertListVL(carteraOn, fondoOn, newListValores);
+        //await _db.insertListVL(carteraOn, fondoOn, newListValores);
         //.whenComplete(() => setState(() => msgLoading = 'Almacenando datos...'));
+        await _insertValores(newListValores);
         await _updateValores();
         /*if (_isLoading) {
           setState(() => _isLoading = false);
@@ -397,7 +445,8 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
                     //textStyle: const TextStyle(color: Colors.white),
                   ),
                   onPressed: () async {
-                    await _db.deleteAllValoresInFondo(carteraOn, fondoOn);
+                    //await _db.deleteAllValoresInFondo(carteraOn, fondoOn);
+                    await _deleteAllValores();
                     await _updateValores();
                     ScaffoldMessenger.of(context).removeCurrentSnackBar();
                     //Navigator.of(context).pushNamed(RouteGenerator.fondoPage);
