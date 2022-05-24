@@ -1,4 +1,3 @@
-//import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:provider/provider.dart';
@@ -29,12 +28,16 @@ class _PageCarteraState extends State<PageCartera> {
   late ApiService apiService;
   var fondos = <Fondo>[];
   bool _isFondosByOrder = false;
+  bool _isAutoUpdate = true;
   final GlobalKey _dialogKey = GlobalKey();
   String _loadingText = '';
 
   getSharedPrefs() async {
-    await PreferencesService.getIsByOrder(kKeyByOrderFondosPref).then((value) {
+    await PreferencesService.getBool(kKeyByOrderFondosPref).then((value) {
       setState(() => _isFondosByOrder = value);
+    });
+    await PreferencesService.getBool(kKeyAutoUpdatePref).then((value) {
+      setState(() => _isAutoUpdate = value);
     });
   }
 
@@ -85,8 +88,7 @@ class _PageCarteraState extends State<PageCartera> {
   _getValoresFondo(Fondo fondo) async {
     var tableFondo = '_${carteraOn.id}' + fondo.isin;
     await _db.getValoresByOrder(tableFondo);
-    // TODO: setstate necesario????
-    //setState(() => fondo.addValores(_db.dbValoresByOrder));
+    // TODO: setstate necesario en addValores ????
     fondo.addValores(_db.dbValoresByOrder);
   }
 
@@ -311,18 +313,19 @@ class _PageCarteraState extends State<PageCartera> {
           key: _dialogKey,
           builder: (context, setState) {
             // return Dialog(child: Loading(...); ???
-            return Loading(titulo: 'Actualizando fondos...', subtitulo: _loadingText);
+            return Loading(
+              titulo: 'ACTUALIZANDO FONDOS...',
+              subtitulo: _loadingText,
+            );
           },
         );
       },
     );
     var mapResultados = await _updateAll(context);
     Navigator.pop(context);
-    if (mapResultados.isNotEmpty) {
-      await _showResultados(mapResultados);
-    } else {
-      _showMsg(msg: 'Nada que actualizar');
-    }
+    mapResultados.isNotEmpty
+        ? await _showResultados(mapResultados)
+        : _showMsg(msg: 'Nada que actualizar');
   }
 
   _setStateDialog(String newText) {
@@ -346,6 +349,7 @@ class _PageCarteraState extends State<PageCartera> {
         if (getDataApi != null) {
           var newValor = Valor(date: getDataApi.epochSecs, precio: getDataApi.price);
           //TODO valor divisa??
+          fondo.divisa = getDataApi.market;
           // var newMoneda = getDataApi.market;
           //await _db.insertDataApi(carteraOn, fondo,
           //    moneda: newMoneda, lastPrecio: newLastPrecio, lastDate: newLastDate);
@@ -414,6 +418,38 @@ class _PageCarteraState extends State<PageCartera> {
     return null;
   }
 
+  _getDataApi(Fondo fondo) async {
+    await _createTableFondo(fondo);
+    final getDataApi = await apiService.getDataApi(fondo.isin);
+    if (getDataApi != null) {
+      var newValor = Valor(date: getDataApi.epochSecs, precio: getDataApi.price);
+      fondo.divisa = getDataApi.market;
+      await _insertFondo(fondo);
+      await _insertValor(fondo, newValor);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  _dialogAutoUpdate(BuildContext context, Fondo newFondo) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Loading(
+          titulo: 'FONDO AÑADIDO',
+          subtitulo: 'Cargando último valor...',
+        );
+      },
+    );
+    var update = await _getDataApi(newFondo);
+    Navigator.pop(context);
+    update
+        ? _showMsg(msg: 'Fondo actualizado')
+        : _showMsg(msg: 'Error al actualizar el fondo', color: Colors.red);
+  }
+
   _addFondo(Fondo newFondo) async {
     var existe = [for (var fondo in _db.dbFondos) fondo.isin].contains(newFondo.isin);
     if (existe) {
@@ -424,8 +460,14 @@ class _PageCarteraState extends State<PageCartera> {
     } else {
       //await _db.insertFondo(carteraOn, newFondo);
       await _insertFondo(newFondo);
+      //await _updateFondos();
+      if (_isAutoUpdate) {
+        await _dialogAutoUpdate(context, newFondo);
+        //await _updateFondos();
+      } else {
+        _showMsg(msg: 'Fondo añadido');
+      }
       await _updateFondos();
-      _showMsg(msg: 'Fondo añadido');
     }
   }
 
@@ -433,7 +475,7 @@ class _PageCarteraState extends State<PageCartera> {
     setState(() {
       _isFondosByOrder = !_isFondosByOrder;
     });
-    PreferencesService.saveIsByOrder(kKeyByOrderFondosPref, _isFondosByOrder);
+    PreferencesService.saveBool(kKeyByOrderFondosPref, _isFondosByOrder);
     await _updateFondos();
   }
 

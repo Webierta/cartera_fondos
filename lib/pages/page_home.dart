@@ -31,7 +31,7 @@ class _PageHomeState extends State<PageHome> {
   Map<int, int> mapIdCarteraNFondos = {};
 
   getSharedPrefs() async {
-    await PreferencesService.getIsByOrder(kKeyByOrderCarterasPref).then((value) {
+    await PreferencesService.getBool(kKeyByOrderCarterasPref).then((value) {
       setState(() => _isCarterasByOrder = value);
     });
   }
@@ -79,7 +79,7 @@ class _PageHomeState extends State<PageHome> {
     } else {*/
     setState(() => _isCarterasByOrder = !_isCarterasByOrder);
     //}
-    PreferencesService.saveIsByOrder(kKeyByOrderCarterasPref, _isCarterasByOrder);
+    PreferencesService.saveBool(kKeyByOrderCarterasPref, _isCarterasByOrder);
     await _updateDbCarteras();
     //}
   }

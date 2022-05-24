@@ -142,7 +142,8 @@ class Sqlite {
   Future<void> insertFondo(String tableCartera, Map<String, dynamic> row) async {
     await openDb();
     //await _db.insert('$cartera.id', fondo.toMap(), conflictAlgorithm: ConflictAlgorithm.ignore);
-    await _db.insert(tableCartera, row, conflictAlgorithm: ConflictAlgorithm.ignore);
+    await _db.insert(tableCartera, row, conflictAlgorithm: ConflictAlgorithm.replace);
+    // TODO : IGNORE ??????????????
   }
 
   /*Future<void> insertDataApi(Cartera cartera, Fondo fondo,

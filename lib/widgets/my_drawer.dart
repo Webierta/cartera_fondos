@@ -9,6 +9,7 @@ class MyDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Drawer(
       child: ListView(
+        padding: EdgeInsets.zero,
         children: [
           DrawerHeader(
             decoration: const BoxDecoration(
@@ -68,6 +69,17 @@ class MyDrawer extends StatelessWidget {
               Navigator.of(context).pop();
               Navigator.of(context).pushNamed(RouteGenerator.infoPage);
             },
+          ),
+          const AboutListTile(
+            icon: Icon(Icons.code),
+            child: Text('About app'),
+            applicationIcon: Icon(Icons.local_play),
+            applicationName: 'My Cool App',
+            applicationVersion: '1.0.25',
+            applicationLegalese: '© 2022 Company',
+            aboutBoxChildren: [
+              ///Content goes here...
+            ],
           ),
           ListTile(
             leading: const Icon(Icons.code),

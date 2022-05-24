@@ -88,8 +88,23 @@ class _MercadoState extends State<PageMercado> {
           title: const Text('Mercado')),
       body: ListView(
         shrinkWrap: true,
-        padding: const EdgeInsets.symmetric(vertical: 30),
+        padding: const EdgeInsets.all(10),
         children: [
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.poll, size: 32),
+              title: Text(fondoOn.name),
+              subtitle: Align(
+                alignment: Alignment.centerLeft,
+                child: Chip(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  avatar: const Icon(Icons.business_center),
+                  label: Text(carteraOn.name),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           FractionallySizedBox(
             widthFactor: 0.6,
             child: Center(

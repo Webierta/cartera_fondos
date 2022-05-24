@@ -15,13 +15,17 @@ class PageSettings extends StatefulWidget {
 class _PageSettingsState extends State<PageSettings> {
   bool _isCarterasByOrder = false;
   bool _isFondosByOrder = false;
+  bool _isAutoUpdate = true;
 
   getSharedPrefs() async {
-    await PreferencesService.getIsByOrder(kKeyByOrderCarterasPref).then((value) {
+    await PreferencesService.getBool(kKeyByOrderCarterasPref).then((value) {
       setState(() => _isCarterasByOrder = value);
     });
-    await PreferencesService.getIsByOrder(kKeyByOrderFondosPref).then((value) {
+    await PreferencesService.getBool(kKeyByOrderFondosPref).then((value) {
       setState(() => _isFondosByOrder = value);
+    });
+    await PreferencesService.getBool(kKeyAutoUpdatePref).then((value) {
+      setState(() => _isAutoUpdate = value);
     });
   }
 
@@ -48,7 +52,9 @@ class _PageSettingsState extends State<PageSettings> {
         ),
         drawer: const MyDrawer(),
         body: ListView(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 30),
           children: [
+            const Text('Carteras'),
             ListTile(
               leading: const Icon(Icons.sort_by_alpha),
               title: const Text('Carteras ordenadas por nombre'),
@@ -56,10 +62,12 @@ class _PageSettingsState extends State<PageSettings> {
                 value: _isCarterasByOrder,
                 onChanged: (value) {
                   setState(() => _isCarterasByOrder = value);
-                  PreferencesService.saveIsByOrder(kKeyByOrderCarterasPref, value);
+                  PreferencesService.saveBool(kKeyByOrderCarterasPref, value);
                 },
               ),
             ),
+            const Divider(color: Colors.grey, height: 20),
+            const Text('Fondos'),
             ListTile(
               leading: const Icon(Icons.sort_by_alpha),
               title: const Text('Fondos ordenados por nombre'),
@@ -67,10 +75,22 @@ class _PageSettingsState extends State<PageSettings> {
                 value: _isFondosByOrder,
                 onChanged: (value) {
                   setState(() => _isFondosByOrder = value);
-                  PreferencesService.saveIsByOrder(kKeyByOrderFondosPref, value);
+                  PreferencesService.saveBool(kKeyByOrderFondosPref, value);
                 },
               ),
             ),
+            ListTile(
+              leading: const Icon(Icons.sync),
+              title: const Text('Obtener último valor al añadir Fondo'),
+              trailing: Switch(
+                value: _isAutoUpdate,
+                onChanged: (value) {
+                  setState(() => _isAutoUpdate = value);
+                  PreferencesService.saveBool(kKeyAutoUpdatePref, value);
+                },
+              ),
+            ),
+            const Divider(color: Colors.grey, height: 20),
           ],
         ),
       ),
