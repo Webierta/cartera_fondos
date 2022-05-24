@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show listEquals;
+//import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:provider/provider.dart';
@@ -9,7 +9,9 @@ import '../models/fondo.dart';
 import '../models/valor.dart';
 import '../routes.dart';
 import '../services/api_service.dart';
+import '../services/preferences_service.dart';
 import '../services/sqlite.dart';
+import '../utils/k_constantes.dart';
 import '../widgets/loading_progress.dart';
 
 enum MenuCartera { ordenar, eliminar }
@@ -26,11 +28,19 @@ class _PageCarteraState extends State<PageCartera> {
   late Sqlite _db;
   late ApiService apiService;
   var fondos = <Fondo>[];
+  bool _isFondosByOrder = false;
   final GlobalKey _dialogKey = GlobalKey();
   String _loadingText = '';
 
+  getSharedPrefs() async {
+    await PreferencesService.getIsByOrder(kKeyByOrderFondosPref).then((value) {
+      setState(() => _isFondosByOrder = value);
+    });
+  }
+
   @override
   void initState() {
+    getSharedPrefs();
     carteraOn = context.read<CarfoinProvider>().getCartera!;
     _db = Sqlite();
     _db.openDb().whenComplete(() async {
@@ -41,13 +51,8 @@ class _PageCarteraState extends State<PageCartera> {
   }
 
   _updateFondos() async {
-    //var tableCartera = '_$carteraOn.id';
-    //await _db.getFondos(tableCartera);
     await _getFondos();
-    //setState(() => fondos = _db.dbFondos);
     for (var fondo in _db.dbFondos) {
-      //await _db.createTableFondo(carteraOn, fondo);
-      //var tableFondo = fondo.isin + '_' + '${carteraOn.id}';
       var tableFondo = '_${carteraOn.id}' + fondo.isin;
       await _db.createTableFondo(tableFondo);
       await _getValoresFondo(fondo);
@@ -57,11 +62,10 @@ class _PageCarteraState extends State<PageCartera> {
 
   _getFondos() async {
     var tableCartera = '_${carteraOn.id}';
-    await _db.getFondos(tableCartera);
+    await _db.getFondos(tableCartera, byOrder: _isFondosByOrder);
   }
 
   _createTableFondo(Fondo fondo) async {
-    //var tableFondo = fondo.isin + '_' + '${carteraOn.id}';
     var tableFondo = '_${carteraOn.id}' + fondo.isin;
     await _db.createTableFondo(tableFondo);
   }
@@ -73,14 +77,12 @@ class _PageCarteraState extends State<PageCartera> {
   }
 
   _insertValor(Fondo fondo, Valor valor) async {
-    //var tableFondo = fondo.isin + '_' + '${carteraOn.id}';
     var tableFondo = '_${carteraOn.id}' + fondo.isin;
     Map<String, dynamic> row = {'date': valor.date, 'precio': valor.precio};
     await _db.insertVL(tableFondo, row);
   }
 
   _getValoresFondo(Fondo fondo) async {
-    //var tableFondo = fondo.isin + '_' + '${carteraOn.id}';
     var tableFondo = '_${carteraOn.id}' + fondo.isin;
     await _db.getValoresByOrder(tableFondo);
     // TODO: setstate necesario????
@@ -116,13 +118,19 @@ class _PageCarteraState extends State<PageCartera> {
       child: Column(
         children: [
           ListTile(
-            leading: Icon(iconData, color: Colors.white),
+            leading: Icon(iconData, color: const Color(0xFFFFFFFF)),
             title: Text(
               '${menu.name[0].toUpperCase()}${menu.name.substring(1)}',
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(color: Color(0xFFFFFFFF)),
             ),
+            trailing: menu == MenuCartera.ordenar
+                ? Icon(
+                    _isFondosByOrder ? Icons.check_box : Icons.check_box_outline_blank,
+                    color: const Color(0xFFFFFFFF),
+                  )
+                : null,
           ),
-          if (divider) const Divider(height: 10, color: Colors.white), // PopMenuDivider
+          if (divider) const Divider(height: 10, color: Color(0xFFFFFFFF)), // PopMenuDivider
         ],
       ),
     );
@@ -133,8 +141,8 @@ class _PageCarteraState extends State<PageCartera> {
     return SpeedDialChild(
       child: Icon(icono),
       label: label,
-      backgroundColor: const Color(0xFF2196F3),
-      foregroundColor: const Color(0xFFFFFFFF),
+      backgroundColor: const Color(0xFFFFC107),
+      foregroundColor: const Color(0xFF0D47A1),
       onTap: () async {
         ScaffoldMessenger.of(context).removeCurrentSnackBar();
         final newFondo = await Navigator.of(context).pushNamed(page);
@@ -153,9 +161,9 @@ class _PageCarteraState extends State<PageCartera> {
     return FutureBuilder<bool>(
       future: _db.openDb(), //TODO: otro future más específico para fondos ??
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        /*if (snapshot.connectionState == ConnectionState.waiting) {
           return const LoadingProgress(titulo: 'Recuperando fondos...', subtitulo: 'Cargando...');
-        }
+        }*/
         if (snapshot.connectionState == ConnectionState.done) {
           /*WidgetsBinding.instance?.addPostFrameCallback((_) {
             Navigator.of(context, rootNavigator: true).pop();
@@ -185,32 +193,23 @@ class _PageCarteraState extends State<PageCartera> {
                     onPressed: () async => await _dialogUpdateAll(context),
                   ),
                   PopupMenuButton(
-                      color: Colors.blue,
-                      offset: Offset(0.0, AppBar().preferredSize.height),
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                      ),
-                      /*itemBuilder: (ctx) {
-                        var listItemMenu = _buildListMenu(context);
-                        return [
-                          for (var item in listItemMenu)
-                            PopupMenuItem(
-                              value: MenuCartera.values[listItemMenu.indexOf(item)],
-                              child: item,
-                            )
-                        ];
-                      },*/
-                      itemBuilder: (ctx) => [
-                            _buildMenuItem(MenuCartera.ordenar, Icons.sort_by_alpha),
-                            _buildMenuItem(MenuCartera.eliminar, Icons.delete_forever),
-                          ],
-                      onSelected: (MenuCartera item) async {
-                        if (item == MenuCartera.ordenar) {
-                          _sortFondos();
-                        } else if (item == MenuCartera.eliminar) {
-                          _deleteAllConfirm(context);
-                        }
-                      }),
+                    color: Colors.blue,
+                    offset: Offset(0.0, AppBar().preferredSize.height),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(8.0)),
+                    ),
+                    itemBuilder: (ctx) => [
+                      _buildMenuItem(MenuCartera.ordenar, Icons.sort_by_alpha),
+                      _buildMenuItem(MenuCartera.eliminar, Icons.delete_forever)
+                    ],
+                    onSelected: (MenuCartera item) async {
+                      if (item == MenuCartera.ordenar) {
+                        _ordenarFondos();
+                      } else if (item == MenuCartera.eliminar) {
+                        _deleteAllConfirm(context);
+                      }
+                    },
+                  ),
                 ],
               ),
               floatingActionButton: SpeedDial(
@@ -218,10 +217,12 @@ class _PageCarteraState extends State<PageCartera> {
                 //activeIcon: Icons.add_chart,
                 //animatedIcon: AnimatedIcons.menu_close,
                 icon: Icons.addchart,
+                foregroundColor: const Color(0xFF0D47A1),
+                backgroundColor: const Color(0xFFFFC107),
                 spacing: 8,
                 spaceBetweenChildren: 4,
-                overlayColor: Colors.blue,
-                overlayOpacity: 0.2,
+                overlayColor: Colors.grey,
+                overlayOpacity: 0.4,
                 children: [
                   _buildSpeedDialChild(context,
                       icono: Icons.search,
@@ -335,13 +336,11 @@ class _PageCarteraState extends State<PageCartera> {
   Future<Map<String, Icon>> _updateAll(BuildContext context) async {
     _setStateDialog('Conectando...');
     var mapResultados = <String, Icon>{};
-    //await _db.getFondos(carteraOn.id);
     await _getFondos();
     if (_db.dbFondos.isNotEmpty) {
       for (var fondo in _db.dbFondos) {
         _setStateDialog(fondo.name);
         //TODO: NECESARIO ?
-        //await _db.createTableFondo(carteraOn, fondo);
         await _createTableFondo(fondo);
         final getDataApi = await apiService.getDataApi(fondo.isin);
         if (getDataApi != null) {
@@ -399,95 +398,6 @@ class _PageCarteraState extends State<PageCartera> {
     );
   }
 
-/*  _refreshAll(BuildContext context) async {
-    var mapResultados = <String, Icon>{};
-    */ /*setState(() {
-      _isUpdating = true;
-      _msgUpdating = 'Iniciando descarga...';
-    });*/ /*
-    //TODO: ??  cambia de página ??
-    //const LoadingProgress(titulo: 'Recuperando fondos...', subtitulo: 'Cargando...');
-    //Loading(context).openDialog(title: 'Actualizando fondos...');
-    await _db.getFondos(carteraOn);
-    if (_db.dbFondos.isNotEmpty) {
-      for (var fondo in _db.dbFondos) {
-        //setState(() => _msgUpdating = 'Actualizando...\n${fondo.name}');
-        //TODO: NECESARIO ?
-        await _db.createTableFondo(carteraOn, fondo);
-        final getDataApi = await apiService.getDataApi(fondo.isin);
-        if (getDataApi != null) {
-          var newValor = Valor(date: getDataApi.epochSecs, precio: getDataApi.price);
-          //TODO valor divisa??
-          // var newMoneda = getDataApi.market;
-          //var newLastPrecio = getDataApi.price;
-          //var newLastDate = getDataApi.epochSecs;
-          //setState(() {
-          //fondo.moneda = newMoneda;
-          */ /*fondo
-            ..moneda = newMoneda
-            ..lastPrecio = newLastPrecio
-            ..lastDate = newLastDate;*/ /*
-          //});
-          //await _db.insertDataApi(carteraOn, fondo,
-          //    moneda: newMoneda, lastPrecio: newLastPrecio, lastDate: newLastDate);
-          await _db.insertFondo(carteraOn, fondo);
-          await _db.insertVL(carteraOn, fondo, newValor);
-          mapResultados[fondo.name] = const Icon(Icons.check_box, color: Colors.green);
-        } else {
-          mapResultados[fondo.name] = const Icon(Icons.disabled_by_default, color: Colors.red);
-          //_showMsg(msg: 'Error al actualizar el fondo ${fondo.name}');  ???
-          // ESTO SE VE ALGUNA VEZ ??
-          */ /*setState(() {
-            _msgUpdating = 'Error al actualizar el fondo ${fondo.name}';
-          });*/ /*
-        }
-      }
-      await _updateFondos();
-      */ /*setState(() {
-        _isUpdating = false;
-        _msgUpdating = '';
-      });*/ /*
-
-      //TODO: vuelve a la página
-      //Loading(context).closeDialog();
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            insetPadding: const EdgeInsets.all(10),
-            title: const Text('Resultado'),
-            actions: [
-              TextButton(
-                child: const Text('Cerrar'),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
-            content: SingleChildScrollView(
-              child: SizedBox(
-                width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (var res in mapResultados.entries)
-                      ListTile(dense: true, title: Text(res.key), trailing: res.value),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      );
-    } else {
-      //Loading(context).closeDialog();
-      _showMsg(msg: 'Nada que actualizar');
-      */ /*setState(() {
-        _isUpdating = false;
-        _msgUpdating = '';
-      });*/ /*
-    }
-  }*/
-
   double? _getLastPrecio(Fondo fondo) {
     if (fondo.historico.isNotEmpty) {
       return fondo.historico.first.precio;
@@ -519,7 +429,15 @@ class _PageCarteraState extends State<PageCartera> {
     }
   }
 
-  void _sortFondos() async {
+  _ordenarFondos() async {
+    setState(() {
+      _isFondosByOrder = !_isFondosByOrder;
+    });
+    PreferencesService.saveIsByOrder(kKeyByOrderFondosPref, _isFondosByOrder);
+    await _updateFondos();
+  }
+
+  /*void _sortFondos() async {
     var fondosSort = <Fondo>[];
     fondosSort = [...fondos];
     fondosSort.sort((a, b) => a.name.compareTo(b.name));
@@ -534,7 +452,7 @@ class _PageCarteraState extends State<PageCartera> {
       }
       await _updateFondos();
     }
-  }
+  }*/
 
   void _deleteAllConfirm(BuildContext context) {
     if (_db.dbFondos.isEmpty) {
@@ -548,11 +466,11 @@ class _PageCarteraState extends State<PageCartera> {
               content: Text(
                   'Esto eliminará todos los fondos almacenados en la cartera ${carteraOn.name}'),
               actions: [
-                TextButton(
+                ElevatedButton(
                   child: const Text('CANCELAR'),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
-                TextButton(
+                ElevatedButton(
                   child: const Text('ACEPTAR'),
                   style: TextButton.styleFrom(
                     backgroundColor: const Color(0xFFF44336),

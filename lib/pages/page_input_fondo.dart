@@ -55,9 +55,19 @@ class _PageInputFondoState extends State<PageInputFondo> {
             child: Column(
               children: [
                 ListTile(
-                  leading: const Icon(Icons.business_center),
-                  title: Text(carteraOn.name),
-                  subtitle: const Text('Introduce el ISIN del nuevo Fondo'),
+                  //leading: const Icon(Icons.business_center),
+                  //title: Text(carteraOn.name),
+                  //subtitle: const Text('Introduce el ISIN del nuevo Fondo'),
+                  leading: const Icon(Icons.add_chart, size: 32),
+                  title: const Text('Introduce el ISIN del nuevo Fondo'),
+                  subtitle: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Chip(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      avatar: const Icon(Icons.business_center),
+                      label: Text(carteraOn.name),
+                    ),
+                  ),
                 ),
                 ListTile(
                   title: TextField(
@@ -77,37 +87,41 @@ class _PageInputFondoState extends State<PageInputFondo> {
                     ),
                   ),
                   subtitle: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    //crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      TextButton.icon(
+                      //ElevatedButton.icon(onPressed: onPressed, icon: icon, label: label)
+                      ElevatedButton.icon(
                         icon: const Icon(Icons.security),
                         label: const Text('Validar'),
-                        onPressed: () {
-                          setState(() => _validIsin = _checkIsin(_controller.value.text));
-                        },
+                        onPressed: _controller.text.isNotEmpty
+                            ? () => setState(() => _validIsin = _checkIsin(_controller.value.text))
+                            : null,
                       ),
-                      TextButton.icon(
+                      ElevatedButton.icon(
                         icon: const Icon(Icons.search),
                         label: const Text('Buscar'),
-                        onPressed: () async {
-                          FocusManager.instance.primaryFocus?.unfocus();
-                          if (_checkIsin(_controller.value.text)) {
-                            setState(() {
-                              _validIsin = true;
-                              _buscando = true;
-                            });
-                            locatedFond = await _searchIsin(_controller.value.text);
-                            setState(() => _buscando = false);
-                          } else {
-                            setState(() => _validIsin = false);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Código ISIN no válido.'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        },
+                        onPressed: _controller.text.isEmpty
+                            ? null
+                            : () async {
+                                FocusManager.instance.primaryFocus?.unfocus();
+                                if (_checkIsin(_controller.value.text)) {
+                                  setState(() {
+                                    _validIsin = true;
+                                    _buscando = true;
+                                  });
+                                  locatedFond = await _searchIsin(_controller.value.text);
+                                  setState(() => _buscando = false);
+                                } else {
+                                  setState(() => _validIsin = false);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Código ISIN no válido.'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              },
                       ),
                     ],
                   ),

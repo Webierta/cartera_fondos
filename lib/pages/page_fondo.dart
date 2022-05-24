@@ -30,14 +30,10 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
   late Fondo fondoOn;
   late Sqlite _db;
   late ApiService apiService;
-
-  //int _selectedIndex = 0;
-  //late bool _isLoading;
   late TabController _tabController;
 
   @override
   void initState() {
-    //_isLoading = true;
     _tabController = TabController(vsync: this, length: 3);
     WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
       carfoin = Provider.of<CarfoinProvider>(context, listen: false);
@@ -61,19 +57,9 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
   }
 
   _updateValores() async {
-    /*if (!_isLoading) {
-      setState(() => _isLoading = true);
-    }*/
-    //await _db.getFondos(carteraOn.id);
     await _getFondos();
-    //var tableFondo = fondoOn.isin + '_' + '${carteraOn.id}';
     var tableFondo = '_${carteraOn.id}' + fondoOn.isin;
-    //await _db.createTableFondo(carteraOn, fondoOn);
     await _db.createTableFondo(tableFondo);
-    /*await _db.getValoresByOrder(carteraOn, fondoOn).whenComplete(() => setState(() {
-          //_isLoading = false;
-          carfoin.setValores = _db.dbValoresByOrder;
-        }));*/
     await _db.getValoresByOrder(tableFondo).whenComplete(() => setState(() {
           carfoin.setValores = _db.dbValoresByOrder;
         }));
@@ -101,14 +87,12 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
   }
 
   _insertValor(Valor valor) async {
-    //var tableFondo = fondoOn.isin + '_' + '${carteraOn.id}';
     var tableFondo = '_${carteraOn.id}' + fondoOn.isin;
     Map<String, dynamic> row = {'date': valor.date, 'precio': valor.precio};
     await _db.insertVL(tableFondo, row);
   }
 
   _insertValores(List<Valor> valores) async {
-    //var tableFondo = fondoOn.isin + '_' + '${carteraOn.id}';
     var tableFondo = '_${carteraOn.id}' + fondoOn.isin;
     for (var valor in valores) {
       Map<String, dynamic> row = {'date': valor.date, 'precio': valor.precio};
@@ -117,7 +101,6 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
   }
 
   _deleteAllValores() async {
-    //var tableFondo = fondoOn.isin + '_' + '${carteraOn.id}';
     var tableFondo = '_${carteraOn.id}' + fondoOn.isin;
     //await _db.deleteAllValores(tableFondo);
     await _db.eliminaTabla(tableFondo);
@@ -146,8 +129,8 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
     return SpeedDialChild(
       child: Icon(icono),
       label: label,
-      backgroundColor: const Color(0xFF2196F3),
-      foregroundColor: const Color(0xFFFFFFFF),
+      backgroundColor: const Color(0xFFFFC107),
+      foregroundColor: const Color(0xFF0D47A1),
       onTap: () async {
         ScaffoldMessenger.of(context).removeCurrentSnackBar();
         action(context);
@@ -157,16 +140,12 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
-    //const listaTabs = [MainFondo(), TablaFondo(), GraficoChart()];
-    //const List<IconData> iconsTab = [Icons.assessment, Icons.table_rows_outlined, Icons.timeline];
-    //_isLoading ? const LoadingProgress(titulo: 'Cargando datos...')
     return FutureBuilder<bool>(
         future: _db.openDb(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const LoadingProgress(titulo: 'CARGANDO DATOS...');
           }
-
           if (snapshot.connectionState == ConnectionState.done) {
             // DefaultTabController(length: 3, child: Scaffold
             return Scaffold(
@@ -214,7 +193,6 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
                   ),
                 ],
               ),
-              //body: listaTabs.elementAt(_selectedIndex),
               body: TabBarView(
                 controller: _tabController,
                 children: const [MainFondo(), TablaFondo(), GraficoChart()],
@@ -243,52 +221,30 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
                   ),
                 ),
               ),
-              /*bottomNavigationBar: BottomAppBar(
-              color: const Color(0xFF2196F3),
-              shape: const CircularNotchedRectangle(),
-              notchMargin: 5,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  for (var icon in iconsTab)
-                    Expanded(
-                      child: IconButton(
-                        icon: Icon(
-                          icon,
-                          color: _selectedIndex == iconsTab.indexOf(icon)
-                              ? const Color(0xFFFFFFFF)
-                              : const Color(0x62FFFFFF), //Colors.white38,
-                        ),
-                        //padding: const EdgeInsets.only(left: 32.0, right: 32.0),
-                        iconSize: 32,
-                        onPressed: () {
-                          setState(() {
-                            _selectedIndex = iconsTab.indexOf(icon);
-                          });
-                        },
-                      ),
-                    ),
-                  const Spacer(),
-                ],
-              ),
-            ),*/
               floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
               floatingActionButton: SpeedDial(
                 //animatedIcon: AnimatedIcons.menu_close,
                 //activeIcon: Icons.refresh,
                 icon: Icons.refresh,
+                foregroundColor: const Color(0xFF0D47A1),
+                backgroundColor: const Color(0xFFFFC107),
                 spacing: 8,
                 spaceBetweenChildren: 4,
-                overlayColor: Colors.blue,
-                overlayOpacity: 0.2,
+                overlayColor: Colors.grey,
+                overlayOpacity: 0.4,
                 children: [
-                  _buildSpeedDialChild(context,
-                      icono: Icons.date_range,
-                      label: 'Descargar valores históricos',
-                      action: _getRangeApi),
-                  _buildSpeedDialChild(context,
-                      icono: Icons.update, label: 'Actualizar último valor', action: _getDataApi),
+                  _buildSpeedDialChild(
+                    context,
+                    icono: Icons.date_range,
+                    label: 'Descargar valores históricos',
+                    action: _getRangeApi,
+                  ),
+                  _buildSpeedDialChild(
+                    context,
+                    icono: Icons.update,
+                    label: 'Actualizar último valor',
+                    action: _getDataApi,
+                  ),
                 ],
               ),
             );
@@ -300,10 +256,18 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
     //return const LoadingProgress(titulo: 'Recuperando valores...', subtitulo: 'Cargando...');
   }
 
+  _dialogProgress(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Loading(titulo: 'Descargando datos...');
+      },
+    );
+  }
+
   void _getDataApi(BuildContext context) async {
-    /*if (!_isLoading) {
-      setState(() => _isLoading = true);
-    }*/
+    _dialogProgress(context);
     final getDataApi = await apiService.getDataApi(fondoOn.isin);
     if (getDataApi != null) {
       var newValor = Valor(date: getDataApi.epochSecs, precio: getDataApi.price);
@@ -332,18 +296,16 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
       await _insertFondo();
       await _insertValor(newValor);
       //.whenComplete(() => setState(() => msgLoading = 'Almacenando datos...'));
-      /*setState(() {
-        msgLoading = 'Datos almacenados...';
-      });*/
       await _updateValores();
       /*if (_isLoading) {
         setState(() => _isLoading = false);
       }*/
       // TODO: BANNER
       //print(dataApi?.price);
+      Navigator.pop(context);
+      _showMsg(msg: 'Descarga de datos completada.');
     } else {
-      //setState(() => loading = false);
-      //setState(() => _isLoading = false);
+      Navigator.pop(context);
       _showMsg(msg: 'Error en la descarga de datos.', color: Colors.red);
     }
   }
@@ -351,16 +313,12 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
   void _getRangeApi(BuildContext context) async {
     final newRange = await Navigator.of(context).pushNamed(RouteGenerator.inputRange);
     if (newRange != null) {
+      _dialogProgress(context);
       var range = newRange as DateTimeRange;
       //String from = DateFormat('yyyy-MM-dd').format(range.start);
       //String to = DateFormat('yyyy-MM-dd').format(range.end);
       String from = FechaUtil.dateToString(date: range.start, formato: 'yyyy-MM-dd');
       String to = FechaUtil.dateToString(date: range.end, formato: 'yyyy-MM-dd');
-      /*setState(() {
-        loading = true;
-        msgLoading = 'Conectando...';
-      });*/
-      //setState(() => _isLoading = true);
       final getDateApiRange = await apiService.getDataApiRange(fondoOn.isin, to, from);
       //?.whenComplete(() => setState(() => msgLoading = 'Descargando datos...'));
       //final getDateApiRange = await apiService.getDataApiRange(fondoOn.isin, to, from);
@@ -373,15 +331,15 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
         //.whenComplete(() => setState(() => msgLoading = 'Almacenando datos...'));
         await _insertValores(newListValores);
         await _updateValores();
-        /*if (_isLoading) {
-          setState(() => _isLoading = false);
-        }*/
         // TODO set last valor (date y precio) desde VALORES cada vez en _updateValores
         //await _compareLastValor();
+        Navigator.pop(context);
+        _showMsg(msg: 'Descarga de datos completada.');
       } else {
         /*if (_isLoading) {
           setState(() => _isLoading = false);
         }*/
+        Navigator.pop(context);
         _showMsg(msg: 'Error en la descarga de datos.', color: Colors.red);
       }
     }
@@ -433,11 +391,11 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
               title: const Text('Eliminar todo'),
               content: const Text('Esto eliminará todos los valores almacenados del fondo.'),
               actions: [
-                TextButton(
+                ElevatedButton(
                   child: const Text('CANCELAR'),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
-                TextButton(
+                ElevatedButton(
                   child: const Text('ACEPTAR'),
                   style: TextButton.styleFrom(
                     backgroundColor: const Color(0xFFF44336),

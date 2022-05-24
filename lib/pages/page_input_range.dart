@@ -33,7 +33,7 @@ class _PageInputRangeState extends State<PageInputRange> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ListTile(
-                  leading: const Icon(Icons.assessment),
+                  leading: const Icon(Icons.assessment, size: 32),
                   title: Text(fondoOn.name),
                   subtitle: const Text('Selecciona un intervalo de fechas:'),
                 ),
@@ -60,14 +60,14 @@ class _PageInputRangeState extends State<PageInputRange> {
                               '${DateFormat('dd/MM/yyyy').format(_dateRange?.start ?? _initDateRange.start)} - '
                               '${DateFormat('dd/MM/yyyy').format(_dateRange?.end ?? _initDateRange.end)}',
                             ),
-                            const Icon(Icons.arrow_drop_down, color: Colors.blue),
+                            const Icon(Icons.arrow_drop_down, color: Color(0xFF2196F3)),
                           ],
                         ),
                       ),
                     ),
                   ),
                   trailing: IconButton(
-                    icon: const Icon(Icons.date_range, color: Colors.blue),
+                    icon: const Icon(Icons.date_range, color: Color(0xFF2196F3)),
                     onPressed: () async {
                       var newRange = await _datePicker(context, DatePickerEntryMode.calendarOnly);
                       if (newRange != null) {
@@ -76,13 +76,13 @@ class _PageInputRangeState extends State<PageInputRange> {
                     },
                   ),
                   subtitle: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      TextButton(
+                      ElevatedButton(
                         child: const Text('CANCELAR'),
                         onPressed: () => Navigator.of(context).pop(),
                       ),
-                      TextButton(
+                      ElevatedButton(
                         child: const Text('ACEPTAR'),
                         onPressed: () {
                           if (_dateRange != null) {

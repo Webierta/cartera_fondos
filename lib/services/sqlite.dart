@@ -179,13 +179,24 @@ class Sqlite {
     });
   } */
 
-  Future<void> getCarteras() async {
+  Future<void> getCarteras({bool byOrder = false}) async {
     await openDb();
-    final List<Map<String, dynamic>> maps = await _db.query(table);
+    //final List<Map<String, dynamic>> maps = await _db.query(table);
+    final List<Map<String, dynamic>> maps =
+        byOrder ? await _db.query(table, orderBy: '$columnInput ASC') : await _db.query(table);
     _dbCarteras = List.generate(maps.length, (i) {
       return Cartera(id: maps[i][columnId], name: maps[i][columnInput]);
     });
   }
+
+  /*Future<void> getCarterasSort() async {
+    // List<Map<String, dynamic>> maps = await _db.query(tableFondo, orderBy: '$columnDate DESC');
+    await openDb();
+    final List<Map<String, dynamic>> maps = await _db.query(table, orderBy: '$columnInput ASC');
+    _dbCarteras = List.generate(maps.length, (i) {
+      return Cartera(id: maps[i][columnId], name: maps[i][columnInput]);
+    });
+  }*/
 
   Future<void> vaciarTabla() async {
     //DELETE FROM tab;
@@ -270,10 +281,12 @@ class Sqlite {
     await _db.update(table, row, where: '$columnId = ?', whereArgs: [id]);
   }
 
-  Future<void> getFondos(String tableCartera) async {
+  Future<void> getFondos(String tableCartera, {bool byOrder = false}) async {
     await openDb();
     //var nameTable = '_$id';
-    final List<Map<String, dynamic>> maps = await _db.query(tableCartera);
+    final List<Map<String, dynamic>> maps = byOrder
+        ? await _db.query(tableCartera, orderBy: '$columnName ASC')
+        : await _db.query(tableCartera);
     List<Fondo> fondos = List.generate(
       maps.length,
       (i) => Fondo(
@@ -289,6 +302,24 @@ class Sqlite {
     }*/
     _dbFondos = fondos;
   }
+
+  /*Future<void> getFondosByOrder(String tableCartera) async {
+    await openDb();
+    //var nameTable = '_$id';
+    //final List<Map<String, dynamic>> maps = await _db.query(tableCartera);
+    final List<Map<String, dynamic>> maps =
+        await _db.query(tableCartera, orderBy: '$columnName ASC');
+
+    List<Fondo> fondos = List.generate(
+      maps.length,
+      (i) => Fondo(
+        isin: maps[i][columnIsin],
+        name: maps[i][columnName],
+        divisa: maps[i][columnDivisa],
+      ),
+    );
+    _dbFondos = fondos;
+  }*/
 
   Future<void> getNumberFondos(String tableCartera) async {
     /*var fondos = <Fondo>[];

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../widgets/my_drawer.dart';
+
 class PageInfo extends StatelessWidget {
   const PageInfo({Key? key}) : super(key: key);
 
@@ -8,7 +10,21 @@ class PageInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('INFO')),
+      appBar: AppBar(
+        title: const Text('INFO'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+
+        /*actions: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.of(context).pop(),
+          )
+        ],*/
+      ),
+      endDrawer: const MyDrawer(),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
         child: ListView(

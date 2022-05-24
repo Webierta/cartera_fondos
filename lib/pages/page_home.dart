@@ -1,13 +1,15 @@
-import 'package:flutter/foundation.dart' show listEquals;
+//import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+//import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../models/carfoin_provider.dart';
 import '../models/cartera.dart';
-import '../models/fondo.dart';
+//import '../models/fondo.dart';
 import '../routes.dart';
+import '../services/preferences_service.dart';
 import '../services/sqlite.dart';
+import '../utils/k_constantes.dart';
 import '../widgets/loading_progress.dart';
 import '../widgets/my_drawer.dart';
 
@@ -24,21 +26,19 @@ class _PageHomeState extends State<PageHome> {
   late Sqlite _db;
   late TextEditingController _controller;
   var carteras = <Cartera>[];
-  Map<int, List<Fondo>> mapCarteraFondos = {};
+  bool _isCarterasByOrder = false;
+  //Map<int, List<Fondo>> mapCarteraFondos = {};
+  Map<int, int> mapIdCarteraNFondos = {};
 
-  String? get _errorText {
-    final text = _controller.value.text.trim();
-    if (text.isEmpty) {
-      return 'Campo requerido';
-    }
-    if (text.startsWith('_')) {
-      return 'Nombre no válido';
-    }
-    return null;
+  getSharedPrefs() async {
+    await PreferencesService.getIsByOrder(kKeyByOrderCarterasPref).then((value) {
+      setState(() => _isCarterasByOrder = value);
+    });
   }
 
   @override
   void initState() {
+    getSharedPrefs();
     _controller = TextEditingController();
     _db = Sqlite();
     _db.openDb().whenComplete(() async {
@@ -48,7 +48,8 @@ class _PageHomeState extends State<PageHome> {
   }
 
   _updateDbCarteras() async {
-    await _db.getCarteras();
+    //_byOrder ? await _db.getCarterasSort() : await _db.getCarteras();
+    await _db.getCarteras(byOrder: _isCarterasByOrder);
     setState(() => carteras = _db.dbCarteras);
     for (var cartera in _db.dbCarteras) {
       await _updateDbFondos(cartera);
@@ -57,20 +58,33 @@ class _PageHomeState extends State<PageHome> {
 
   _updateDbFondos(Cartera cartera) async {
     var tableCartera = '_${cartera.id}';
-    await _db.getFondos(tableCartera);
-    setState(() => mapCarteraFondos[cartera.id] = _db.dbFondos);
+    //await _db.getFondos(tableCartera);
+    //setState(() => mapCarteraFondos[cartera.id] = _db.dbFondos);
+    await _db.getNumberFondos(tableCartera);
+    setState(() => mapIdCarteraNFondos[cartera.id] = _db.dbNumFondos);
   }
 
-  //_insertCartera(Cartera cartera) async {
-  //  Map<String, dynamic> row = {'name': cartera.name};
   Future<int> _insertCartera(String name) async {
     Map<String, dynamic> row = {'input': name};
     final int id = await _db.insertCartera(row);
-    //await _db.insertCartera(row);
     return id;
   }
 
-  _orderCarteras() async {
+  _ordenarCarteras() async {
+    /*List<Cartera> carterasSort = <Cartera>[];
+    carterasSort = [...carteras];
+    carterasSort.sort((a, b) => a.name.compareTo(b.name));
+    if (listEquals(carteras, carterasSort)) {
+      _showMsg(msg: 'Nada que hacer: Las carteras ya están ordenadas por nombre.');
+    } else {*/
+    setState(() => _isCarterasByOrder = !_isCarterasByOrder);
+    //}
+    PreferencesService.saveIsByOrder(kKeyByOrderCarterasPref, _isCarterasByOrder);
+    await _updateDbCarteras();
+    //}
+  }
+
+  /*_orderCarteras() async {
     //await _updateDbCarteras();
     List<Cartera> carterasSort = <Cartera>[];
     carterasSort = [...carteras];
@@ -103,17 +117,17 @@ class _PageHomeState extends State<PageHome> {
       }
       await _updateDbCarteras();
     }
-  }
+  }*/
 
   _createTableCartera(int id) async {
     var tableCartera = '_$id';
     await _db.createTableCartera(tableCartera);
   }
 
-  _clearCarfoin() async {
+  /*_clearCarfoin() async {
     //await _db.deleteAllCarteras();
     await _db.clearCarfoin();
-  }
+  }*/
 
   /*_deleteAllValores(Cartera cartera, Fondo fondo) async {
     var tableFondo = '_${cartera.id}' + fondo.isin;
@@ -149,13 +163,19 @@ class _PageHomeState extends State<PageHome> {
       child: Column(
         children: [
           ListTile(
-            leading: Icon(iconData, color: Colors.white),
+            leading: Icon(iconData, color: const Color(0xFFFFFFFF)),
             title: Text(
               '${menu.name[0].toUpperCase()}${menu.name.substring(1)}',
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(color: Color(0xFFFFFFFF)),
             ),
+            trailing: menu == Menu.ordenar
+                ? Icon(
+                    _isCarterasByOrder ? Icons.check_box : Icons.check_box_outline_blank,
+                    color: const Color(0xFFFFFFFF),
+                  )
+                : null,
           ),
-          if (divider == true) const Divider(color: Colors.white), // PopMenuDivider
+          if (divider == true) const Divider(color: Color(0xFFFFFFFF)), // PopMenuDivider
         ],
       ),
     );
@@ -168,9 +188,9 @@ class _PageHomeState extends State<PageHome> {
     return FutureBuilder<bool>(
       future: _db.openDb(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        /*if (snapshot.connectionState == ConnectionState.waiting) {
           return const LoadingProgress(titulo: 'Recuperando carteras...', subtitulo: 'Cargando...');
-        }
+        }*/
         if (snapshot.connectionState == ConnectionState.done) {
           // TODO: MANEJAR ESTO
           if (snapshot.hasError) {
@@ -182,6 +202,12 @@ class _PageHomeState extends State<PageHome> {
               appBar: AppBar(
                 title: const FittedBox(child: Text('MIS CARTERAS')),
                 actions: [
+                  IconButton(
+                    icon: const Icon(Icons.settings),
+                    onPressed: () {
+                      Navigator.of(context).pushNamed(RouteGenerator.settingsPage);
+                    },
+                  ),
                   PopupMenuButton(
                     color: Colors.blue,
                     offset: Offset(0.0, AppBar().preferredSize.height),
@@ -199,34 +225,7 @@ class _PageHomeState extends State<PageHome> {
                       if (item == Menu.renombrar) {
                         print('RENAME');
                       } else if (item == Menu.ordenar) {
-                        await _orderCarteras();
-
-                        /*List<Cartera> carterasSort = <Cartera>[];
-                        carterasSort = [...carteras];
-                        carterasSort.sort((a, b) => a.name.compareTo(b.name));
-                        // TODO: chequear si ya está ordenada
-                        //if (ListEquality().(carteras, carterasSort)) {}
-                        if (listEquals(carteras, carterasSort)) {
-                          _showMsg(
-                              msg: 'Nada que hacer: Las carteras ya están ordenadas por nombre.');
-                        } else {*/
-                        //await _db.deleteAllCarteraInCarteras();
-                        /*await _deleteAllCarteras();
-                          for (var cartera in carterasSort) {
-                            //await _db.insertCartera(cartera);
-                            await _insertCartera(cartera.name);
-                            //Map<String, dynamic> row = {'name': cartera.name};
-                            //await _db.insertCartera(row);
-                          }*/
-                        //await _orderCarteras(carterasSort);
-                        /*await await _deleteAllCarteras();
-                          for (var cartera in carterasSort) {
-                            //await _insertCartera(cartera.name);
-                            int id = await _insertCartera(cartera.name);
-                            await _createTableCartera(id);
-                          }
-                          await _updateDbCarteras();*/
-                        //}
+                        _ordenarCarteras();
                       } else if (item == Menu.exportar) {
                         print('EXPORTAR');
                       } else if (item == Menu.eliminar) {
@@ -238,7 +237,8 @@ class _PageHomeState extends State<PageHome> {
               ),
               drawer: const MyDrawer(),
               floatingActionButton: FloatingActionButton(
-                child: const Icon(Icons.add),
+                backgroundColor: const Color(0xFFFFC107),
+                child: const Icon(Icons.add, color: Color(0xFF0D47A1)),
                 onPressed: () => _carteraInput(context),
               ),
               body: carteras.isEmpty
@@ -246,7 +246,8 @@ class _PageHomeState extends State<PageHome> {
                   : ListView.builder(
                       itemCount: carteras.length,
                       itemBuilder: (context, index) {
-                        int nFondos = mapCarteraFondos[carteras[index].id]?.length ?? 0;
+                        //int nFondos = mapCarteraFondos[carteras[index].id]?.length ?? 0;
+                        int nFondos = mapIdCarteraNFondos[carteras[index].id] ?? 0;
                         return Dismissible(
                           key: UniqueKey(),
                           direction: DismissDirection.endToStart,
@@ -269,7 +270,6 @@ class _PageHomeState extends State<PageHome> {
                                 ScaffoldMessenger.of(context).removeCurrentSnackBar();
                                 //WidgetsBinding.instance?.addPostFrameCallback((_) {
                                 carfoin.setCartera = carteras[index];
-                                //Navigator.of(context).pushNamed(RouteGenerator.carteraPage);
                                 Navigator.of(context).pushNamed(RouteGenerator.carteraPage);
                                 //});
                               },
@@ -284,23 +284,7 @@ class _PageHomeState extends State<PageHome> {
                               child: Icon(Icons.delete, color: Colors.white),
                             ),
                           ),
-                          onDismissed: (_) async {
-                            // no elimina fondos de cartera fantasma
-                            //await _db.deleteCarteraInCarteras(carteras[index]);
-                            //await _deleteCartera(carteras[index]);
-
-                            var nameTablas = await _db.getNameTables();
-                            for (var name in nameTablas) {
-                              print(name);
-                            }
-                            print('ELIMINANDO ${carteras[index].id} ${carteras[index].name}');
-                            await _deleteCartera(carteras[index]);
-                            await _updateDbCarteras();
-                            var nameTablas2 = await _db.getNameTables();
-                            for (var name in nameTablas2) {
-                              print(name);
-                            }
-                          },
+                          onDismissed: (_) => _onDismissed(index),
                         );
                       },
                     ),
@@ -308,18 +292,25 @@ class _PageHomeState extends State<PageHome> {
           }
         }
         return const LoadingProgress(titulo: 'Actualizando carteras...');
-        /*return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                CircularProgressIndicator(),
-                SizedBox(height: 10),
-                Text('Recuperando datos...'),
-              ],
-            ),
-          );*/
       },
     );
+  }
+
+  _onDismissed(int index) async {
+    // no elimina fondos de cartera fantasma
+    //await _db.deleteCarteraInCarteras(carteras[index]);
+    //await _deleteCartera(carteras[index]);
+    var nameTablas = await _db.getNameTables();
+    for (var name in nameTablas) {
+      print(name);
+    }
+    print('ELIMINANDO ${carteras[index].id} ${carteras[index].name}');
+    await _deleteCartera(carteras[index]);
+    await _updateDbCarteras();
+    var nameTablas2 = await _db.getNameTables();
+    for (var name in nameTablas2) {
+      print(name);
+    }
   }
 
   Future<void> _carteraInput(BuildContext context) async {
@@ -355,53 +346,7 @@ class _PageHomeState extends State<PageHome> {
                         ),
                         ElevatedButton(
                           child: const Text('ACEPTAR'),
-                          /*style: TextButton.styleFrom(
-                            //backgroundColor: _validText ? Colors.blue : Colors.grey,
-                            backgroundColor: (_errorText == null) ? Colors.blue : Colors.grey,
-                            primary: Colors.white,
-                            //textStyle: const TextStyle(color: Colors.white),
-                          ),*/
-                          onPressed: _errorText != null
-                              ? null
-                              : () async {
-                                  /*if (_controller.value.text.trim().isNotEmpty &&
-                                      !_controller.value.text.trim().startsWith('_')) {*/
-                                  var _input = _controller.value.text.trim();
-                                  //if (_input.isNotEmpty) {
-                                  ///* INNECESARIO PORQUE NO SE ADMITEN ESTOS CARACTERES
-                                  /*var _alpha = _input.replaceAll(RegExp('[^a-zA-Z0-9_]'), '');
-                              var _name = _alpha.startsWith(RegExp(r'[0-9]')) ? '_$_alpha' : _alpha;
-                              _controller.value.text.replaceAll(RegExp('[^a-zA-Z0-9_]'), '');*/
-                                  //var existe = [for (var cartera in _db.dbCarteras) cartera.name].contains(_input);
-                                  var existe = [for (var cartera in _db.dbCarteras) cartera.name]
-                                      .contains(_input);
-                                  if (existe) {
-                                    _controller.clear();
-                                    Navigator.pop(context);
-                                    _showMsg(
-                                      msg: 'Ya existe una cartera con ese nombre.',
-                                      color: Colors.red,
-                                    );
-                                  } else {
-                                    //await _db.insertCartera(Cartera(name: _input));
-                                    //await _db.insertCartera(_input);
-                                    int id = await _insertCartera(_input);
-
-                                    //Map<String, dynamic> row = {'name': _input};
-                                    //final int id = await _db.insertCartera(row);
-
-                                    //print('inserted row id: $id');
-
-                                    //await _db.createTableCartera(Cartera(name: _input));
-                                    //await _db.createTableCartera(id);
-                                    await _createTableCartera(id);
-                                    await _updateDbCarteras();
-                                    _controller.clear();
-                                    Navigator.pop(context);
-                                  }
-                                  //}
-                                  //}
-                                },
+                          onPressed: _controller.value.text.trim().isNotEmpty ? _submit : null,
                         ),
                       ],
                     ),
@@ -409,6 +354,41 @@ class _PageHomeState extends State<PageHome> {
                 });
           });
         });
+  }
+
+  String? get _errorText {
+    final text = _controller.value.text.trim();
+    if (text.isEmpty) {
+      return 'Campo requerido';
+    }
+    /*if (text.startsWith('_')) {
+      return 'Nombre no válido';
+    }*/
+    return null;
+  }
+
+  void _submit() async {
+    if (_errorText == null) {
+      var _input = _controller.value.text.trim();
+
+      ///* INNECESARIO PORQUE NO SE ADMITEN ESTOS CARACTERES
+      /*var _alpha = _input.replaceAll(RegExp('[^a-zA-Z0-9_]'), '');
+      var _name = _alpha.startsWith(RegExp(r'[0-9]')) ? '_$_alpha' : _alpha;
+      _controller.value.text.replaceAll(RegExp('[^a-zA-Z0-9_]'), '');*/
+      //var existe = [for (var cartera in _db.dbCarteras) cartera.name].contains(_input);
+      var existe = [for (var cartera in _db.dbCarteras) cartera.name].contains(_input);
+      if (existe) {
+        _controller.clear();
+        Navigator.pop(context);
+        _showMsg(msg: 'Ya existe una cartera con ese nombre.', color: Colors.red);
+      } else {
+        int id = await _insertCartera(_input);
+        await _createTableCartera(id);
+        await _updateDbCarteras();
+        _controller.clear();
+        Navigator.pop(context);
+      }
+    }
   }
 
   void _deleteConfirm(BuildContext context) {

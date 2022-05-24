@@ -11,6 +11,7 @@ import 'pages/page_input_fondo.dart';
 import 'pages/page_input_range.dart';
 import 'pages/page_mercado.dart';
 import 'pages/page_search_fondo.dart';
+import 'pages/page_settings.dart';
 
 class RouteGenerator {
   static const String homePage = '/';
@@ -22,6 +23,7 @@ class RouteGenerator {
   static const String mercadoPage = '/mercado';
   static const String infoPage = '/info';
   static const String aboutPage = '/about';
+  static const String settingsPage = '/settings';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     //final args = settings.arguments as bool?;
@@ -70,6 +72,8 @@ class RouteGenerator {
       case aboutPage:
         //return MaterialPageRoute(builder: (context) => const PageAbout());
         return AnimatedRoute(const PageAbout());
+      case settingsPage:
+        return AnimatedRoute(const PageSettings());
       default:
         return _errorRoute();
     }

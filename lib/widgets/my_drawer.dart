@@ -45,6 +45,23 @@ class MyDrawer extends StatelessWidget {
             ),
           ),
           ListTile(
+            leading: const Icon(Icons.home),
+            title: const Text('Inicio'),
+            onTap: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pushNamed(RouteGenerator.homePage);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.settings),
+            title: const Text('Ajustes'),
+            onTap: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pushNamed(RouteGenerator.settingsPage);
+            },
+          ),
+          const Divider(color: Colors.grey),
+          ListTile(
             leading: const Icon(Icons.info_outline),
             title: const Text('Info'),
             onTap: () {
@@ -60,7 +77,6 @@ class MyDrawer extends StatelessWidget {
               Navigator.of(context).pushNamed(RouteGenerator.aboutPage);
             },
           ),
-          const Divider(),
           ListTile(
             leading: const Icon(Icons.local_cafe_outlined),
             title: const Text('Donar'),
@@ -68,6 +84,7 @@ class MyDrawer extends StatelessWidget {
               Navigator.of(context).pop();
             },
           ),
+          const Divider(color: Colors.grey),
           ListTile(
             leading: const Icon(Icons.exit_to_app),
             title: const Text('Salir'),
