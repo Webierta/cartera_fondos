@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/carfoin_provider.dart';
 import '../models/cartera.dart';
 import '../models/fondo.dart';
+import '../models/operacion.dart';
 import '../models/valor.dart';
 import '../routes.dart';
 import '../services/api_service.dart';
@@ -62,6 +63,9 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
     await _db.createTableFondo(tableFondo);
     await _db.getValoresByOrder(tableFondo).whenComplete(() => setState(() {
           carfoin.setValores = _db.dbValoresByOrder;
+        }));
+    await _db.getOperacionesByOrder(tableFondo).whenComplete(() => setState(() {
+          carfoin.setOperaciones = _db.dbOperacionesByOrder;
         }));
     //TODO: SETSTATE ??
     //carfoin.setValores = _db.dbValoresByOrder;
@@ -158,7 +162,16 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
                     Navigator.of(context).pushNamed(RouteGenerator.carteraPage, arguments: true);
                   },
                 ),
-                title: Text(fondoOn.name),
+                //title: Text(fondoOn.name),
+                title: Chip(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  backgroundColor: const Color(0xFF0D47A1),
+                  avatar: const Icon(Icons.business_center),
+                  label: Text(
+                    carteraOn.name,
+                    style: const TextStyle(color: Color(0xFFFFFFFF)),
+                  ),
+                ),
                 actions: [
                   PopupMenuButton(
                     color: const Color(0xFF2196F3),

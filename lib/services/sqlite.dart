@@ -5,6 +5,7 @@ import 'package:path/path.dart';
 
 import '../models/cartera.dart';
 import '../models/fondo.dart';
+import '../models/operacion.dart';
 import '../models/valor.dart';
 
 class Sqlite {
@@ -23,11 +24,13 @@ class Sqlite {
   // TABLE FONDO
   static const columnDate = 'date';
   static const columnPrecio = 'precio';
-  //TABLE MERCADO
-  static const columnTipo = 'tipo';
-  static const columnDateMercado = 'date';
+  static const columnTipoOperacion = 'tipo';
   static const columnParticipaciones = 'participaciones';
-  static const columnPrecioMercado = 'precio';
+  //TABLE MERCADO
+  //static const columnTipo = 'tipo';
+  //static const columnDateMercado = 'date';
+  //static const columnParticipaciones = 'participaciones';
+  //static const columnPrecioMercado = 'precio';
 
   final AsyncMemoizer _memoizer = AsyncMemoizer();
   late Database _db;
@@ -36,12 +39,14 @@ class Sqlite {
   int _dbNumFondos = 0;
   List<Valor> _dbValores = [];
   List<Valor> _dbValoresByOrder = [];
+  List<Operacion> _dbOperacionesByOrder = [];
 
   List<Cartera> get dbCarteras => _dbCarteras;
   List<Fondo> get dbFondos => _dbFondos;
   int get dbNumFondos => _dbNumFondos;
   List<Valor> get dbValores => _dbValores;
   List<Valor> get dbValoresByOrder => _dbValoresByOrder;
+  List<Operacion> get dbOperacionesByOrder => _dbOperacionesByOrder;
 
   Future<void> _initDb() async {
     final dbFolder = await getDatabasesPath();
@@ -106,11 +111,13 @@ class Sqlite {
     await _db.execute('''
       CREATE TABLE IF NOT EXISTS $tableFondo (
         $columnDate INTEGER PRIMARY KEY,
-        $columnPrecio REAL NOT NULL)
+        $columnPrecio REAL NOT NULL,
+        $columnTipoOperacion INTEGER,
+        $columnParticipaciones REAL)
       ''');
   }
 
-  Future<void> createTableMercado(String tableMercado) async {
+  /*Future<void> createTableMercado(String tableMercado) async {
     await openDb();
     //var nameTable = 'mk_' + fondo.isin + '_' + '$cartera.id';
     await _db.execute('''
@@ -121,7 +128,7 @@ class Sqlite {
         $columnParticipaciones REAL,
         $columnPrecioMercado REAL)
       ''');
-  }
+  }*/
 
   /*Future<void> insertCartera(Cartera cartera) async {
     await openDb();
@@ -158,6 +165,11 @@ class Sqlite {
     await openDb();
     // var nameTable = fondo.isin + '_' + '$cartera.id';
     //await _db.insert(nameTable, valor.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    await _db.insert(tableFondo, row, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> insertOperacion(String tableFondo, Map<String, dynamic> row) async {
+    await openDb();
     await _db.insert(tableFondo, row, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
@@ -344,12 +356,32 @@ class Sqlite {
 
   Future<void> getValoresByOrder(String tableFondo) async {
     await openDb();
-    //var nameTable = fondo.isin + '_' + '$cartera.id';
     List<Map<String, dynamic>> maps = await _db.query(tableFondo, orderBy: '$columnDate DESC');
     _dbValoresByOrder = List.generate(
       maps.length,
       (i) => Valor(date: maps[i][columnDate], precio: maps[i][columnPrecio]),
     );
+  }
+
+  Future<void> getOperacionesByOrder(String tableFondo) async {
+    await openDb();
+    List<Map<String, dynamic>> maps = await _db.query(tableFondo,
+        orderBy: '$columnDate ASC', where: '$columnTipoOperacion IN (?, ?)', whereArgs: [1, 0]);
+    _dbOperacionesByOrder = List.generate(
+      maps.length,
+      (i) => Operacion(
+        tipo: maps[i][columnTipoOperacion],
+        date: maps[i][columnDate],
+        participaciones: maps[i][columnParticipaciones],
+        precio: maps[i][columnPrecio],
+      ),
+    );
+    print('  GEEEEEEEEEEEEEETTTTTTTT');
+    if (_dbOperacionesByOrder.isNotEmpty) {
+      print('${_dbOperacionesByOrder.first.participaciones}');
+    } else {
+      print('NADA');
+    }
   }
 
   Future<void> clearCarfoin() async {

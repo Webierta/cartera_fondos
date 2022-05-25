@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../models/carfoin_provider.dart';
 import '../models/cartera.dart';
 import '../models/fondo.dart';
+import '../models/operacion.dart';
 import '../models/valor.dart';
 import '../routes.dart';
 import '../services/api_service.dart';
@@ -53,11 +54,21 @@ class _MercadoState extends State<PageMercado> {
     super.initState();
   }
 
-  _insertValor(Valor valor) async {
-    //var tableFondo = fondoOn.isin + '_' + '${carteraOn.id}';
+  /*_insertValor(Valor valor) async {
     var tableFondo = '_${carteraOn.id}' + fondoOn.isin;
     Map<String, dynamic> row = {'date': valor.date, 'precio': valor.precio};
     await _db.insertVL(tableFondo, row);
+  }*/
+
+  _insertOperacion(Operacion op) async {
+    var tableFondo = '_${carteraOn.id}' + fondoOn.isin;
+    Map<String, dynamic> row = {
+      'date': op.date,
+      'precio': op.precio,
+      'tipo': op.tipo,
+      'participaciones': op.participaciones
+    };
+    await _db.insertOperacion(tableFondo, row);
   }
 
   _resetControllers() {
@@ -115,18 +126,14 @@ class _MercadoState extends State<PageMercado> {
                       padding: const EdgeInsets.all(8.0),
                       child: Text(
                         'SUSCRIBIR',
-                        style: TextStyle(
-                          fontWeight: _tipo ? FontWeight.bold : FontWeight.w300,
-                        ),
+                        style: TextStyle(fontWeight: _tipo ? FontWeight.bold : FontWeight.w300),
                       ),
                     ),
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Text(
                         'REEMBOLSAR',
-                        style: TextStyle(
-                          fontWeight: !_tipo ? FontWeight.bold : FontWeight.w300,
-                        ),
+                        style: TextStyle(fontWeight: !_tipo ? FontWeight.bold : FontWeight.w300),
                       ),
                     ),
                   ],
@@ -315,13 +322,23 @@ class _MercadoState extends State<PageMercado> {
 
   _submit(BuildContext context) async {
     if (_formKey.currentState!.validate()) {
-      Valor newValor = Valor(date: _date, precio: _precio);
+      //Valor newValor = Valor(date: _date, precio: _precio);
       // TODO: valores duplicados ??
       // CHECK SI NO EXISTE (Y TAMBIEN CHECK DESDE PAGE FONDO)
       //await _db.insertVL(carteraOn, fondoOn, newValor);
-      await _insertValor(newValor);
+      //await _insertValor(newValor);
       //await _compareLastValor();
       // TODO: remove or hide ??
+      print('SUBMIT');
+      print('$_tipo');
+      print('$_date');
+      print('$_participaciones');
+      print('$_precio');
+
+      int tipoOp = _tipo ? 1 : 0;
+      Operacion newOp =
+          Operacion(tipo: tipoOp, date: _date, participaciones: _participaciones, precio: _precio);
+      await _insertOperacion(newOp);
       ScaffoldMessenger.of(context).removeCurrentSnackBar();
       Navigator.of(context).pushNamed(RouteGenerator.fondoPage);
     }

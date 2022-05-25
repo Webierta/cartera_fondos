@@ -1,5 +1,5 @@
 class Operacion {
-  final bool tipo;
+  final int tipo;
   final int date;
   final double participaciones;
   final double precio;
