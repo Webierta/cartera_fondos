@@ -337,7 +337,7 @@ class _PageHomeState extends State<PageHome> {
                         ),
                       ),
                       actions: <Widget>[
-                        ElevatedButton(
+                        OutlinedButton(
                           child: const Text('CANCELAR'),
                           onPressed: () {
                             _controller.clear();

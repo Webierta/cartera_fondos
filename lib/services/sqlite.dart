@@ -376,12 +376,6 @@ class Sqlite {
         precio: maps[i][columnPrecio],
       ),
     );
-    print('  GEEEEEEEEEEEEEETTTTTTTT');
-    if (_dbOperacionesByOrder.isNotEmpty) {
-      print('${_dbOperacionesByOrder.first.participaciones}');
-    } else {
-      print('NADA');
-    }
   }
 
   Future<void> clearCarfoin() async {

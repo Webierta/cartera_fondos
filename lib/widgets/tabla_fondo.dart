@@ -3,7 +3,10 @@ import 'package:provider/provider.dart';
 //import 'package:intl/intl.dart';
 
 import '../models/carfoin_provider.dart';
+//import '../models/cartera.dart';
+//import '../models/fondo.dart';
 import '../models/valor.dart';
+//import '../services/sqlite.dart';
 import '../utils/fecha_util.dart';
 
 class TablaFondo extends StatefulWidget {
@@ -18,12 +21,48 @@ class _TablaFondoState extends State<TablaFondo> {
   //var valoresOn = <Valor>[];
   bool _isSortDesc = true;
 
+  /*late CarfoinProvider carfoin;
+  late Cartera carteraOn;
+  late Fondo fondoOn;
+  late Sqlite _db;*/
+
   /*@override
   void initState() {
     //final valoresOn = context.read<CarfoinProvider>().getValores;
     //valoresCopy = [...valoresOn];
     valoresOn = context.read<CarfoinProvider>().getValores;
     super.initState();
+  }*/
+  /*@override
+  void initState() {
+    WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
+      carfoin = Provider.of<CarfoinProvider>(context, listen: false);
+      //carteraOn = carfoin.getCartera!;
+    });
+    carteraOn = context.read<CarfoinProvider>().getCartera!;
+    fondoOn = context.read<CarfoinProvider>().getFondo!;
+    _db = Sqlite();
+    _db.openDb().whenComplete(() async {
+      await _updateValores();
+    });
+    super.initState();
+  }*/
+
+  /*_updateValores() async {
+    await _getFondos();
+    var tableFondo = '_${carteraOn.id}' + fondoOn.isin;
+    await _db.createTableFondo(tableFondo);
+    await _db.getValoresByOrder(tableFondo).whenComplete(() => setState(() {
+          carfoin.setValores = _db.dbValoresByOrder;
+        }));
+    await _db.getOperacionesByOrder(tableFondo).whenComplete(() => setState(() {
+          carfoin.setOperaciones = _db.dbOperacionesByOrder;
+        }));
+  }
+
+  _getFondos() async {
+    var tableCartera = '_${carteraOn.id}';
+    await _db.getFondos(tableCartera);
   }*/
 
   @override
@@ -74,26 +113,30 @@ class _TablaFondoState extends State<TablaFondo> {
                           onPressed: () => _changeSort(),
                         )),
                     const Expanded(
-                        flex: 2,
+                        flex: 3,
                         child: Text(
                           'FECHA',
                           textAlign: TextAlign.center,
                           style: TextStyle(fontWeight: FontWeight.bold),
                         )),
                     const Expanded(
-                        flex: 1,
+                        flex: 3,
                         child: Text(
                           'PRECIO',
                           textAlign: TextAlign.center,
                           style: TextStyle(fontWeight: FontWeight.bold),
                         )),
                     const Expanded(
-                        flex: 1,
+                        flex: 2,
                         child: Text(
                           '+/-',
                           textAlign: TextAlign.center,
                           style: TextStyle(fontWeight: FontWeight.bold),
                         )),
+                    const Expanded(
+                      flex: 1,
+                      child: Text(''),
+                    ),
                   ],
                 ),
               ),
@@ -106,30 +149,61 @@ class _TablaFondoState extends State<TablaFondo> {
                   physics: const ClampingScrollPhysics(),
                   itemCount: valoresOn.length,
                   itemBuilder: (context, index) {
-                    return Row(
-                      children: [
-                        Expanded(
-                            flex: 1,
-                            child: Text(
-                              _isSortDesc ? '${valoresOn.length - index}' : '${index + 1}',
-                              textAlign: TextAlign.center,
-                            )),
-                        Expanded(
-                            flex: 2,
-                            child: Text(
-                              //_epochFormat(valoresCopy[index].date),
-                              FechaUtil.epochToString(valoresOn[index].date),
-                              textAlign: TextAlign.center,
-                            )),
-                        Expanded(
-                            flex: 1,
-                            child: Text(
-                              '${valoresOn[index].precio}',
-                              textAlign: TextAlign.center,
-                            )),
-                        Expanded(flex: 1, child: _diferencia(valoresOn[index])),
-                      ],
-                    );
+                    return Dismissible(
+                        key: UniqueKey(),
+                        direction: DismissDirection.endToStart,
+                        child: Row(
+                          children: [
+                            Expanded(
+                                flex: 1,
+                                child: Text(
+                                  _isSortDesc ? '${valoresOn.length - index}' : '${index + 1}',
+                                  textAlign: TextAlign.center,
+                                )),
+                            Expanded(
+                                flex: 3,
+                                child: Text(
+                                  //_epochFormat(valoresCopy[index].date),
+                                  FechaUtil.epochToString(valoresOn[index].date),
+                                  textAlign: TextAlign.center,
+                                )),
+                            Expanded(
+                                flex: 3,
+                                child: Text(
+                                  '${valoresOn[index].precio}',
+                                  textAlign: TextAlign.center,
+                                )),
+                            Expanded(
+                              flex: 2,
+                              child: _diferencia(valoresOn[index]),
+                            ),
+                            Expanded(
+                              flex: 1,
+                              child: IconButton(
+                                icon: const Icon(Icons.edit),
+                                onPressed: () {
+                                  print('EDITAR');
+                                },
+                              ),
+                            )
+                          ],
+                        ),
+                        background: Container(
+                          color: Colors.red,
+                          margin: const EdgeInsets.symmetric(horizontal: 15),
+                          alignment: Alignment.centerRight,
+                          child: const Padding(
+                            padding: EdgeInsets.all(10.0),
+                            child: Icon(Icons.delete, color: Colors.white),
+                          ),
+                        ),
+                        onDismissed: (_) async {
+                          print('ELIMINAR VALOR');
+                          var counter = context.read<CarfoinProvider>();
+                          await counter.eliminarValor(valoresOn[index].date);
+                          await counter.updateValores();
+                          //PageFondo page = PageFondo().eliminarValor() ;
+                        });
                   },
                 ),
               ),

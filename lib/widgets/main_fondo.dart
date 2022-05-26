@@ -1,6 +1,7 @@
 //import 'package:cartera_fondos/models/valor.dart';
+import 'dart:math';
+
 import 'package:cartera_fondos/models/operacion.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -27,6 +28,66 @@ class MainFondo extends StatelessWidget {
         return last - prev;
       }
       return null;
+    }
+
+    double _getPrecioMin() {
+      if (valoresOn.length < 2) {
+        return 0.0;
+      }
+      final List<double> precios = valoresOn.reversed.map((entry) => entry.precio).toList();
+      return precios.reduce((curr, next) => curr < next ? curr : next);
+    }
+
+    double _getPrecioMax() {
+      if (valoresOn.length < 2) {
+        return 0.0;
+      }
+      final List<double> precios = valoresOn.reversed.map((entry) => entry.precio).toList();
+      return precios.reduce((curr, next) => curr > next ? curr : next);
+    }
+
+    String _getFechaMin() {
+      if (valoresOn.length < 2) {
+        return '';
+      }
+      final List<double> precios = valoresOn.reversed.map((entry) => entry.precio).toList();
+      final List<int> fechas = valoresOn.reversed.map((entry) => entry.date).toList();
+      return FechaUtil.epochToString(fechas[precios.indexOf(_getPrecioMin())]);
+    }
+
+    String _getFechaMax() {
+      if (valoresOn.length < 2) {
+        return '';
+      }
+      final List<double> precios = valoresOn.reversed.map((entry) => entry.precio).toList();
+      final List<int> fechas = valoresOn.reversed.map((entry) => entry.date).toList();
+      return FechaUtil.epochToString(fechas[precios.indexOf(_getPrecioMax())]);
+    }
+
+    double _getPrecioMedio() {
+      if (valoresOn.length < 2) {
+        return 0.0;
+      }
+      final List<double> precios = valoresOn.reversed.map((entry) => entry.precio).toList();
+      return precios.reduce((a, b) => a + b) / precios.length;
+    }
+
+    double _getVolatilidad() {
+      if (valoresOn.length < 2) {
+        return 0.0;
+      }
+      var suma = 0.0;
+      for (var valor in valoresOn) {
+        suma += valor.precio;
+      }
+      var media = suma / valoresOn.length;
+      var diferencialesCuadrados = 0.0;
+      for (var valor in valoresOn) {
+        //diferencialesCuadrados += pow(valor.precio - media, 2);
+        diferencialesCuadrados += (valor.precio - media) * (valor.precio - media);
+      }
+      var varianza = diferencialesCuadrados / valoresOn.length;
+      return sqrt(varianza);
     }
 
     double _getInversion() {
@@ -85,6 +146,28 @@ class MainFondo extends StatelessWidget {
       return _getPatrimonio() - _getInversion();
     }
 
+    double _getRentabilidad() {
+      if (operacionesOn.isEmpty) {
+        return 0.0;
+      }
+      //return _getBalance() / _getInversion();
+      return (valoresOn.first.precio - operacionesOn.first.precio) / operacionesOn.first.precio;
+    }
+
+    double _getTae() {
+      if (operacionesOn.isEmpty) {
+        return 0.0;
+      }
+
+      return pow(
+              (_getPatrimonio() / _getInversion()),
+              (365 /
+                  (FechaUtil.epochToDate(valoresOn.first.date)
+                      .difference(FechaUtil.epochToDate(operacionesOn.first.date))
+                      .inDays))) -
+          1;
+    }
+
     return ListView(
       shrinkWrap: true,
       padding: const EdgeInsets.all(10),
@@ -106,34 +189,83 @@ class MainFondo extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    if (valoresOn.isNotEmpty)
-                      Text(
-                        FechaUtil.epochToString(valoresOn.first.date),
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    valoresOn.isEmpty
-                        ? const Expanded(
-                            child: Text(
-                              'Sin datos. Descarga el último valor o un intervalo de valores históricos.',
-                              softWrap: false,
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 3,
-                            ),
-                          )
-                        : Text(
-                            '${valoresOn.first.precio} ${fondoOn.divisa}',
-                            style: Theme.of(context).textTheme.titleLarge,
+                valoresOn.isEmpty
+                    ? const Text(
+                        'Sin datos. Descarga el último valor o un intervalo de valores históricos.')
+                    : Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: Colors.blue,
+                            width: 2,
                           ),
-                    if (_getDiferencia() != null)
-                      Text(
-                        _getDiferencia()!.toStringAsFixed(2),
-                        style: TextStyle(color: _getDiferencia()! < 0 ? Colors.red : Colors.green),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            Text(
+                              FechaUtil.epochToString(valoresOn.first.date),
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            Text(
+                              '${valoresOn.first.precio} ${fondoOn.divisa}',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            if (_getDiferencia() != null)
+                              Text(
+                                _getDiferencia()!.toStringAsFixed(2),
+                                style: TextStyle(
+                                    color: _getDiferencia()! < 0 ? Colors.red : Colors.green),
+                              ),
+                          ],
+                        ),
                       ),
-                  ],
-                ),
+                if (valoresOn.isNotEmpty) const SizedBox(height: 10),
+                if (valoresOn.length > 1)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: FractionallySizedBox(
+                      widthFactor: 0.7,
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              const Text('Mínimo'),
+                              const Spacer(),
+                              Text(_getFechaMin()),
+                              const Spacer(),
+                              Text(NumberFormat.decimalPattern('es').format(_getPrecioMin())),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              const Text('Máximo'),
+                              const Spacer(),
+                              Text(_getFechaMax()),
+                              const Spacer(),
+                              Text(NumberFormat.decimalPattern('es').format(_getPrecioMax())),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              const Text('Media'),
+                              const Spacer(),
+                              Text(NumberFormat.decimalPattern('es').format(_getPrecioMedio())),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              const Text('Volatilidad'),
+                              const Spacer(),
+                              //Text(NumberFormat.decimalPattern('es').format(_getVolatilidad())),
+                              Text(_getVolatilidad().toStringAsFixed(2)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -181,8 +313,7 @@ class MainFondo extends StatelessWidget {
                                       const Text('Importe'),
                                       const Spacer(),
                                       Text(
-                                        NumberFormat.currency(locale: 'es', symbol: '')
-                                            .format(_getInversion()),
+                                        NumberFormat.decimalPattern('es').format(_getInversion()),
                                         style: const TextStyle(fontWeight: FontWeight.w700),
                                       ),
                                     ],
@@ -199,7 +330,8 @@ class MainFondo extends StatelessWidget {
                                     children: [
                                       const Text('Valor inicio'),
                                       const Spacer(),
-                                      Text('${operacionesOn.first.precio}'),
+                                      Text(NumberFormat.decimalPattern('es')
+                                          .format(operacionesOn.first.precio)),
                                     ],
                                   ),
                                   Row(
@@ -207,7 +339,8 @@ class MainFondo extends StatelessWidget {
                                     children: [
                                       const Text('Participaciones'),
                                       const Spacer(),
-                                      Text('${_getParticipaciones()}'),
+                                      Text(NumberFormat.decimalPattern('es')
+                                          .format(_getParticipaciones())),
                                     ],
                                   ),
                                 ],
@@ -235,8 +368,8 @@ class MainFondo extends StatelessWidget {
                                       const Text('Importe'),
                                       const Spacer(),
                                       Text(
-                                        NumberFormat.currency(locale: 'es', symbol: '')
-                                            .format(_getPatrimonio()),
+                                        NumberFormat.decimalPattern('es').format(_getPatrimonio()),
+                                        //NumberFormat("#,###.0#", "es").format(_getPatrimonio()),
                                         style: const TextStyle(fontWeight: FontWeight.w700),
                                       ),
                                     ],
@@ -256,14 +389,18 @@ class MainFondo extends StatelessWidget {
                                       const Spacer(),
                                       RichText(
                                         text: TextSpan(
-                                          text: '${valoresOn.first.precio} ',
+                                          text: NumberFormat.decimalPattern('es')
+                                              .format(valoresOn.first.precio),
                                           style: DefaultTextStyle.of(context).style,
                                           children: <TextSpan>[
                                             const TextSpan(text: '('),
                                             TextSpan(
-                                              text: (valoresOn.first.precio -
+                                              /*text: (valoresOn.first.precio -
                                                       operacionesOn.first.precio)
-                                                  .toStringAsFixed(2),
+                                                  .toStringAsFixed(2),*/
+                                              text: NumberFormat.decimalPattern('es').format(
+                                                  valoresOn.first.precio -
+                                                      operacionesOn.first.precio),
                                               style: TextStyle(
                                                   color: valoresOn.first.precio -
                                                               operacionesOn.first.precio <
@@ -300,11 +437,39 @@ class MainFondo extends StatelessWidget {
                                       const Text('Diferencia'),
                                       const Spacer(),
                                       Text(
-                                        NumberFormat.currency(locale: 'es', symbol: '')
-                                            .format(_getBalance()),
+                                        NumberFormat.decimalPattern('es').format(_getBalance()),
                                         style: TextStyle(
                                             fontWeight: FontWeight.w700,
                                             color: _getBalance() < 0 ? Colors.red : Colors.green),
+                                      ),
+                                    ],
+                                  ),
+                                  Row(
+                                    children: [
+                                      const Text('Rentabilidad'),
+                                      const Spacer(),
+                                      Text(
+                                        NumberFormat.decimalPercentPattern(
+                                                locale: 'es', decimalDigits: 2)
+                                            .format(_getRentabilidad()),
+                                        style: TextStyle(
+                                            color: _getBalance() < 0 ? Colors.red : Colors.green),
+                                      ),
+                                    ],
+                                  ),
+                                  Row(
+                                    children: [
+                                      const Text('TAE'),
+                                      const Spacer(),
+                                      FittedBox(
+                                        child: Text(
+                                          NumberFormat.decimalPercentPattern(
+                                                  locale: 'es', decimalDigits: 2)
+                                              .format(_getTae()),
+                                          //NumberFormat.compact(locale: 'es').format(_getTae()),
+                                          style: TextStyle(
+                                              color: _getTae() < 0 ? Colors.red : Colors.green),
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -400,21 +565,25 @@ class MainFondo extends StatelessWidget {
                                   Expanded(
                                     flex: 2,
                                     child: Text(
-                                      '${operacionesOn[index].participaciones}',
+                                      NumberFormat.decimalPattern('es')
+                                          .format(operacionesOn[index].participaciones),
+                                      //'${operacionesOn[index].participaciones}',
                                       textAlign: TextAlign.center,
                                     ),
                                   ),
                                   Expanded(
                                     flex: 2,
                                     child: Text(
-                                      '${operacionesOn[index].precio}',
+                                      NumberFormat.decimalPattern('es')
+                                          .format(operacionesOn[index].precio),
+                                      //'${operacionesOn[index].precio}',
                                       textAlign: TextAlign.center,
                                     ),
                                   ),
                                   Expanded(
                                     flex: 3,
                                     child: Text(
-                                      NumberFormat.currency(locale: 'es', symbol: '').format(
+                                      NumberFormat.decimalPattern('es').format(
                                           (operacionesOn[index].participaciones *
                                               operacionesOn[index].precio)),
                                       textAlign: TextAlign.center,

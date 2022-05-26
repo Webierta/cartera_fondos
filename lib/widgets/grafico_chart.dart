@@ -122,7 +122,8 @@ class GraficoChart extends StatelessWidget {
             //interval: 500000000 / spots.length,
             //interval: ((epochMax - epochMin) / spots.length) * 10,
             //interval: 1650057221 / spots.length,
-            interval: 2592000, // 1 mes
+            //TODO: REVISAR INTERVALO OPTIMO
+            interval: (epochMax - epochMin) > 2592000 ? 22592000 : 2592000, // 1 mes
             //interval: (spots.last.x - spots.first.x),
             //interval: fechas.length / 2,
             getTitlesWidget: (double value, TitleMeta meta) {
