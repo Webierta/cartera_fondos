@@ -67,7 +67,8 @@ class _TablaFondoState extends State<TablaFondo> {
 
   @override
   Widget build(BuildContext context) {
-    final valoresOn = context.read<CarfoinProvider>().getValores;
+    //final valoresOn = context.read<CarfoinProvider>().getValores;
+    final valoresOn = context.watch<CarfoinProvider>().getValores;
 
     _changeSort() {
       //setState(() {
@@ -152,6 +153,22 @@ class _TablaFondoState extends State<TablaFondo> {
                     return Dismissible(
                         key: UniqueKey(),
                         direction: DismissDirection.endToStart,
+                        background: Container(
+                          color: Colors.red,
+                          margin: const EdgeInsets.symmetric(horizontal: 15),
+                          alignment: Alignment.centerRight,
+                          child: const Padding(
+                            padding: EdgeInsets.all(10.0),
+                            child: Icon(Icons.delete, color: Colors.white),
+                          ),
+                        ),
+                        onDismissed: (_) async {
+                          print('ELIMINAR VALOR');
+                          var carfoin = context.read<CarfoinProvider>();
+                          await carfoin.eliminarValor(valoresOn[index].date);
+                          await carfoin.updateValores();
+                          //PageFondo page = PageFondo().eliminarValor() ;
+                        },
                         child: Row(
                           children: [
                             Expanded(
@@ -187,23 +204,7 @@ class _TablaFondoState extends State<TablaFondo> {
                               ),
                             )
                           ],
-                        ),
-                        background: Container(
-                          color: Colors.red,
-                          margin: const EdgeInsets.symmetric(horizontal: 15),
-                          alignment: Alignment.centerRight,
-                          child: const Padding(
-                            padding: EdgeInsets.all(10.0),
-                            child: Icon(Icons.delete, color: Colors.white),
-                          ),
-                        ),
-                        onDismissed: (_) async {
-                          print('ELIMINAR VALOR');
-                          var counter = context.read<CarfoinProvider>();
-                          await counter.eliminarValor(valoresOn[index].date);
-                          await counter.updateValores();
-                          //PageFondo page = PageFondo().eliminarValor() ;
-                        });
+                        ));
                   },
                 ),
               ),

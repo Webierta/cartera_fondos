@@ -3,13 +3,13 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:provider/provider.dart';
 
 import '../models/carfoin_provider.dart';
-import '../models/cartera.dart';
-import '../models/fondo.dart';
-import '../models/operacion.dart';
+//import '../models/cartera.dart';
+//import '../models/fondo.dart';
+//import '../models/operacion.dart';
 import '../models/valor.dart';
 import '../routes.dart';
 import '../services/api_service.dart';
-import '../services/sqlite.dart';
+//import '../services/sqlite.dart';
 import '../utils/fecha_util.dart';
 import '../widgets/grafico_chart.dart';
 import '../widgets/loading_progress.dart';
@@ -27,25 +27,56 @@ class PageFondo extends StatefulWidget {
 
 class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMixin {
   late CarfoinProvider carfoin;
-  late Cartera carteraOn;
-  late Fondo fondoOn;
-  late Sqlite _db;
+  //late Cartera carteraOn;
+  //late Fondo fondoOn;
+  //late Sqlite _db;
   late ApiService apiService;
   late TabController _tabController;
 
   @override
   void initState() {
     _tabController = TabController(vsync: this, length: 3);
-    WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
-      carfoin = Provider.of<CarfoinProvider>(context, listen: false);
+    /*WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      carteraOn = context.watch<CarfoinProvider>().getCartera!;
+      fondoOn = context.watch<CarfoinProvider>().getFondo!;
+    });*/
+    /*WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      //carfoin = Provider.of<CarfoinProvider>(context, listen: false);
+      carfoin = context.read<CarfoinProvider>();
+      carteraOn = carfoin.getCartera!;
+      fondoOn = carfoin.getFondo!;
       //carteraOn = carfoin.getCartera!;
-    });
-    carteraOn = context.read<CarfoinProvider>().getCartera!;
-    fondoOn = context.read<CarfoinProvider>().getFondo!;
+    });*/
+    //carteraOn = context.read<CarfoinProvider>().getCartera!;
+    //fondoOn = context.read<CarfoinProvider>().getFondo!;
+    //carteraOn = carfoin.getCartera!;
+    //fondoOn = carfoin.getFondo!;
 
-    _db = Sqlite();
+    /*_db = Sqlite();
     _db.openDb().whenComplete(() async {
-      await _updateValores();
+      carfoin = context.read<CarfoinProvider>();
+      await carfoin.updateValores();
+    });*/
+
+    /*_db = Sqlite();
+    _db.openDb().whenComplete(() async {
+      // NEW PROVIDER
+      //await _updateValores();
+      //var carfoin = context.read<CarfoinProvider>();
+      //await carfoin.updateValores();
+      //await Provider.of<CarfoinProvider>(context, listen: false).updateValores();
+      //await context.read<CarfoinProvider>().updateValores();
+      carfoin = context.read<CarfoinProvider>();
+      //carteraOn = carfoin.getCartera!;
+      //fondoOn = carfoin.getFondo!;
+      //carteraOn = context.watch<CarfoinProvider>().getCartera!;
+      //fondoOn = context.watch<CarfoinProvider>().getFondo!;
+      await carfoin.updateValores();
+    });*/
+
+    carfoin = context.read<CarfoinProvider>();
+    carfoin.openDb().whenComplete(() async {
+      await carfoin.updateValores();
     });
     apiService = ApiService();
     super.initState();
@@ -57,6 +88,7 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
     super.dispose();
   }
 
+/* NEW PROVIDER
   _updateValores() async {
     await _getFondos();
     var tableFondo = '_${carteraOn.id}' + fondoOn.isin;
@@ -108,7 +140,7 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
     var tableFondo = '_${carteraOn.id}' + fondoOn.isin;
     //await _db.deleteAllValores(tableFondo);
     await _db.eliminaTabla(tableFondo);
-  }
+  }*/
 
   PopupMenuItem<Menu> _buildMenuItem(Menu menu, IconData iconData, {bool divider = false}) {
     return PopupMenuItem(
@@ -144,12 +176,16 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
+    var carteraOn = context.watch<CarfoinProvider>().getCartera!;
+    var fondoOn = context.watch<CarfoinProvider>().getFondo!;
+
     return FutureBuilder<bool>(
-        future: _db.openDb(),
+        //future: _db.openDb(),
+        future: carfoin.openDb(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          /*if (snapshot.connectionState == ConnectionState.waiting) {
             return const LoadingProgress(titulo: 'CARGANDO DATOS...');
-          }
+          }*/
           if (snapshot.connectionState == ConnectionState.done) {
             // DefaultTabController(length: 3, child: Scaffold
             return Scaffold(
@@ -280,6 +316,8 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
   }
 
   void _getDataApi(BuildContext context) async {
+    var fondoOn = context.read<CarfoinProvider>().getFondo!;
+
     _dialogProgress(context);
     final getDataApi = await apiService.getDataApi(fondoOn.isin);
     if (getDataApi != null) {
@@ -301,15 +339,25 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
       //TODO: ESTE INSERT DESORDENA LOS FONDOS (pone al final el actualizado)
       //await _db.insertDataApi(carteraOn, fondoOn,
       //    moneda: newMoneda, lastPrecio: newLastPrecio, lastDate: newLastDate);
+
       fondoOn.divisa = getDataApi.market;
+
       //Fondo newFondo = fondoOn;
       //newFondo.divisa = getDataApi.market;
       //await _db.insertFondo(carteraOn, fondoOn);
       //await _db.insertVL(carteraOn, fondoOn, newValor);
+
+      /* NEW PROVIDER
       await _insertFondo();
       await _insertValor(newValor);
       //.whenComplete(() => setState(() => msgLoading = 'Almacenando datos...'));
-      await _updateValores();
+      await _updateValores();*/
+
+      await carfoin.insertFondo();
+      await carfoin.insertValor(newValor);
+      await carfoin.updateValores();
+      //setState(() {});
+
       /*if (_isLoading) {
         setState(() => _isLoading = false);
       }*/
@@ -324,6 +372,8 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
   }
 
   void _getRangeApi(BuildContext context) async {
+    var fondoOn = context.read<CarfoinProvider>().getFondo!;
+
     final newRange = await Navigator.of(context).pushNamed(RouteGenerator.inputRange);
     if (newRange != null) {
       _dialogProgress(context);
@@ -342,8 +392,15 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
         }
         //await _db.insertListVL(carteraOn, fondoOn, newListValores);
         //.whenComplete(() => setState(() => msgLoading = 'Almacenando datos...'));
+
+        /* NEW PROVIDER
         await _insertValores(newListValores);
-        await _updateValores();
+        await _updateValores();*/
+
+        await carfoin.insertValores(newListValores);
+        await carfoin.updateValores();
+        //setState(() {});
+
         // TODO set last valor (date y precio) desde VALORES cada vez en _updateValores
         //await _compareLastValor();
         Navigator.pop(context);
@@ -393,8 +450,12 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
     return false;
   }*/
 
-  void _deleteConfirm(BuildContext context) {
-    if (_db.dbValoresByOrder.isEmpty) {
+  void _deleteConfirm(BuildContext context) async {
+    var fondoOn = context.read<CarfoinProvider>().getFondo!;
+    // TODO: necesario getValores si se usa provider watch ??
+    //await carfoin.getValoresFondo(fondoOn);
+    //if (_db.dbValoresByOrder.isEmpty) {
+    if (carfoin.getValores.isEmpty) {
       _showMsg(msg: 'Nada que eliminar');
     } else {
       showDialog(
@@ -417,11 +478,19 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
                   ),
                   onPressed: () async {
                     //await _db.deleteAllValoresInFondo(carteraOn, fondoOn);
+
+                    /* NEW PROVIDER
                     await _deleteAllValores();
-                    await _updateValores();
-                    ScaffoldMessenger.of(context).removeCurrentSnackBar();
+                    await _updateValores();*/
+
+                    await carfoin.deleteAllValores();
+                    await carfoin.updateValores();
+                    //setState(() {});
+
+                    /*ScaffoldMessenger.of(context).removeCurrentSnackBar();
                     //Navigator.of(context).pushNamed(RouteGenerator.fondoPage);
-                    Navigator.of(context).pop();
+                    Navigator.of(context).pop();*/
+                    _pop();
                     //_tabController.animateTo(_tabController.index);
                   },
                 ),
@@ -429,6 +498,11 @@ class _PageFondoState extends State<PageFondo> with SingleTickerProviderStateMix
             );
           });
     }
+  }
+
+  void _pop() {
+    ScaffoldMessenger.of(context).removeCurrentSnackBar();
+    Navigator.of(context).pop();
   }
 
   void _showMsg({required String msg, MaterialColor color = Colors.grey}) {

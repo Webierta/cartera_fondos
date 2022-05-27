@@ -3,13 +3,14 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:provider/provider.dart';
 
 import '../models/carfoin_provider.dart';
-import '../models/cartera.dart';
+//import '../models/cartera.dart';
 import '../models/fondo.dart';
 import '../models/valor.dart';
 import '../routes.dart';
 import '../services/api_service.dart';
 import '../services/preferences_service.dart';
-import '../services/sqlite.dart';
+//import '../services/sqlite.dart';
+import '../utils/fecha_util.dart';
 import '../utils/k_constantes.dart';
 import '../widgets/loading_progress.dart';
 
@@ -23,10 +24,11 @@ class PageCartera extends StatefulWidget {
 }
 
 class _PageCarteraState extends State<PageCartera> {
-  late Cartera carteraOn;
-  late Sqlite _db;
+  late CarfoinProvider carfoin;
+  //late Cartera carteraOn;
+  //late Sqlite _db;
   late ApiService apiService;
-  var fondos = <Fondo>[];
+  //var fondos = <Fondo>[];
   bool _isFondosByOrder = false;
   bool _isAutoUpdate = true;
   final GlobalKey _dialogKey = GlobalKey();
@@ -44,15 +46,21 @@ class _PageCarteraState extends State<PageCartera> {
   @override
   void initState() {
     getSharedPrefs();
-    carteraOn = context.read<CarfoinProvider>().getCartera!;
-    _db = Sqlite();
+    //carteraOn = context.read<CarfoinProvider>().getCartera!;
+    /*_db = Sqlite();
     _db.openDb().whenComplete(() async {
       await _updateFondos();
+    });*/
+    carfoin = context.read<CarfoinProvider>();
+    carfoin.openDb().whenComplete(() async {
+      await carfoin.updateFondos(_isFondosByOrder);
     });
+
     apiService = ApiService();
     super.initState();
   }
 
+  /*
   _updateFondos() async {
     await _getFondos();
     for (var fondo in _db.dbFondos) {
@@ -92,12 +100,12 @@ class _PageCarteraState extends State<PageCartera> {
     fondo.addValores(_db.dbValoresByOrder);
   }
 
-  /*_deleteAllValores(Fondo fondo) async {
+  */ /*_deleteAllValores(Fondo fondo) async {
     //var tableFondo = fondo.isin + '_' + '${carteraOn.id}';
     var tableFondo = '_${carteraOn.id}' + fondo.isin;
     //await _db.deleteAllValores(tableFondo);
     await _db.eliminaTabla(tableFondo);
-  }*/
+  }*/ /*
 
   _deleteFondo(Fondo fondo) async {
     var tableFondo = '_${carteraOn.id}' + fondo.isin;
@@ -111,7 +119,7 @@ class _PageCarteraState extends State<PageCartera> {
     var tableCartera = '_${carteraOn.id}';
     //await _db.deleteAllFondos(tableCartera);
     await _db.eliminaTabla(tableCartera);
-  }
+  }*/
 
   PopupMenuItem<MenuCartera> _buildMenuItem(MenuCartera menu, IconData iconData,
       {bool divider = false}) {
@@ -158,10 +166,16 @@ class _PageCarteraState extends State<PageCartera> {
   @override
   Widget build(BuildContext context) {
     //final carfoin = Provider.of<CarfoinProvider>(context);
+    //final carfoin = context.read<CarfoinProvider>();
     final carfoin = context.read<CarfoinProvider>();
+    var carteraOn = context.read<CarfoinProvider>().getCartera!;
+    var fondos = context.watch<CarfoinProvider>().getFondos;
+
+    // var valores = context.watch<CarfoinProvider>().getValoresFondo(fondos[index]);
 
     return FutureBuilder<bool>(
-      future: _db.openDb(), //TODO: otro future más específico para fondos ??
+      //future: _db.openDb(), //TODO: otro future más específico para fondos ??
+      future: carfoin.openDb(),
       builder: (context, snapshot) {
         /*if (snapshot.connectionState == ConnectionState.waiting) {
           return const LoadingProgress(titulo: 'Recuperando fondos...', subtitulo: 'Cargando...');
@@ -241,26 +255,58 @@ class _PageCarteraState extends State<PageCartera> {
                   : ListView.builder(
                       itemCount: fondos.length,
                       itemBuilder: (context, index) {
+                        // TODO: obtener valor y diferencia de cada fondo
+                        int? lastEpoch = _getLastDate(fondos[index]);
+                        String lastDate =
+                            lastEpoch != null ? FechaUtil.epochToString(lastEpoch) : '';
+                        //var lastPrecio = _getLastPrecio(fondos[index]) ?? '';
+                        String lastPrecio = '${_getLastPrecio(fondos[index]) ?? ''}';
+                        double? diferencia = _getDiferencia(fondos[index]);
+
                         return Dismissible(
                           key: UniqueKey(),
                           direction: DismissDirection.endToStart,
+                          background: Container(
+                            color: Colors.red,
+                            margin: const EdgeInsets.symmetric(horizontal: 15),
+                            alignment: Alignment.centerRight,
+                            child: const Padding(
+                              padding: EdgeInsets.all(10.0),
+                              child: Icon(Icons.delete, color: Colors.white),
+                            ),
+                          ),
+                          onDismissed: (_) async {
+                            //_db.deleteAllValoresInFondo(carteraOn, fondos[index]);
+                            //_db.deleteFondoInCartera(carteraOn, fondos[index]);
+                            //await _deleteAllValores(fondos[index]);
+
+                            //await _deleteFondo(fondos[index]);
+                            //await _updateFondos();
+                            await carfoin.deleteFondo(fondos[index]);
+                            await carfoin.updateFondos(_isFondosByOrder);
+                          },
                           child: Card(
                             child: ListTile(
                               leading: const Icon(Icons.assessment, size: 32),
                               title: Text(fondos[index].name),
                               subtitle: Text(fondos[index].isin),
                               trailing: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
+                                  Text(lastDate),
                                   Text(
-                                    '${_getLastPrecio(fondos[index]) ?? ''}',
+                                    //'${_getLastPrecio(fondos[index]) ?? ''}',
+                                    lastPrecio,
                                     style: const TextStyle(fontWeight: FontWeight.bold),
                                   ),
-                                  if (_getDiferencia(fondos[index]) != null)
+                                  //if (_getDiferencia(fondos[index]) != null)
+                                  if (diferencia != null)
                                     Text(
-                                      _getDiferencia(fondos[index])!.toStringAsFixed(2),
+                                      //_getDiferencia(fondos[index])!.toStringAsFixed(2),
+                                      diferencia.toStringAsFixed(2),
                                       style: TextStyle(
-                                        color: _getDiferencia(fondos[index])! < 0
+                                        color: diferencia < 0
                                             ? const Color(0xFFF44336)
                                             : const Color(0xFF4CAF50),
                                       ),
@@ -277,22 +323,6 @@ class _PageCarteraState extends State<PageCartera> {
                               },
                             ),
                           ),
-                          background: Container(
-                            color: Colors.red,
-                            margin: const EdgeInsets.symmetric(horizontal: 15),
-                            alignment: Alignment.centerRight,
-                            child: const Padding(
-                              padding: EdgeInsets.all(10.0),
-                              child: Icon(Icons.delete, color: Colors.white),
-                            ),
-                          ),
-                          onDismissed: (_) async {
-                            //_db.deleteAllValoresInFondo(carteraOn, fondos[index]);
-                            //_db.deleteFondoInCartera(carteraOn, fondos[index]);
-                            //await _deleteAllValores(fondos[index]);
-                            await _deleteFondo(fondos[index]);
-                            await _updateFondos();
-                          },
                         );
                       },
                     ),
@@ -339,12 +369,16 @@ class _PageCarteraState extends State<PageCartera> {
   Future<Map<String, Icon>> _updateAll(BuildContext context) async {
     _setStateDialog('Conectando...');
     var mapResultados = <String, Icon>{};
-    await _getFondos();
-    if (_db.dbFondos.isNotEmpty) {
-      for (var fondo in _db.dbFondos) {
+    //await _getFondos();
+    await carfoin.getFondosCartera(_isFondosByOrder);
+    //if (_db.dbFondos.isNotEmpty) {
+    if (carfoin.getFondos.isNotEmpty) {
+      //for (var fondo in _db.dbFondos) {
+      for (var fondo in carfoin.getFondos) {
         _setStateDialog(fondo.name);
         //TODO: NECESARIO ?
-        await _createTableFondo(fondo);
+        //await _createTableFondo(fondo);
+        await carfoin.createTableFondo(fondo);
         final getDataApi = await apiService.getDataApi(fondo.isin);
         if (getDataApi != null) {
           var newValor = Valor(date: getDataApi.epochSecs, precio: getDataApi.price);
@@ -355,15 +389,20 @@ class _PageCarteraState extends State<PageCartera> {
           //    moneda: newMoneda, lastPrecio: newLastPrecio, lastDate: newLastDate);
           //await _db.insertFondo(carteraOn, fondo);
           //await _db.insertVL(carteraOn, fondo, newValor);
-          await _insertFondo(fondo);
-          await _insertValor(fondo, newValor);
+
+          //await _insertFondo(fondo);
+          //await _insertValor(fondo, newValor);
+          await carfoin.insertFondoCartera(fondo);
+          await carfoin.insertValorFondo(fondo, newValor);
+
           mapResultados[fondo.name] = const Icon(Icons.check_box, color: Colors.green);
         } else {
           mapResultados[fondo.name] = const Icon(Icons.disabled_by_default, color: Colors.red);
         }
       }
       //TODO: check si es necesario update (si no ha habido cambios porque todos los fondos han dado error)
-      await _updateFondos();
+      //await _updateFondos();
+      await carfoin.updateFondos(_isFondosByOrder);
     }
     return mapResultados;
   }
@@ -402,9 +441,23 @@ class _PageCarteraState extends State<PageCartera> {
     );
   }
 
+  // double?
   double? _getLastPrecio(Fondo fondo) {
+    //var fondos = context.watch<CarfoinProvider>().getFondos;
+    /*await carfoin.getValoresFondo(fondo);
+    var valoresFondo = carfoin.getValores;
+    if (valoresFondo.isNotEmpty) {
+      return valoresFondo.first.precio;
+    }*/
     if (fondo.historico.isNotEmpty) {
       return fondo.historico.first.precio;
+    }
+    return null;
+  }
+
+  int? _getLastDate(Fondo fondo) {
+    if (fondo.historico.isNotEmpty) {
+      return fondo.historico.first.date;
     }
     return null;
   }
@@ -419,13 +472,18 @@ class _PageCarteraState extends State<PageCartera> {
   }
 
   _getDataApi(Fondo fondo) async {
-    await _createTableFondo(fondo);
+    //await _createTableFondo(fondo);
+    await carfoin.createTableFondo(fondo);
     final getDataApi = await apiService.getDataApi(fondo.isin);
     if (getDataApi != null) {
       var newValor = Valor(date: getDataApi.epochSecs, precio: getDataApi.price);
       fondo.divisa = getDataApi.market;
-      await _insertFondo(fondo);
-      await _insertValor(fondo, newValor);
+
+      //await _insertFondo(fondo);
+      //await _insertValor(fondo, newValor);
+      await carfoin.insertFondoCartera(fondo);
+      await carfoin.insertValorFondo(fondo, newValor);
+
       return true;
     } else {
       return false;
@@ -451,7 +509,8 @@ class _PageCarteraState extends State<PageCartera> {
   }
 
   _addFondo(Fondo newFondo) async {
-    var existe = [for (var fondo in _db.dbFondos) fondo.isin].contains(newFondo.isin);
+    //var existe = [for (var fondo in _db.dbFondos) fondo.isin].contains(newFondo.isin);
+    var existe = [for (var fondo in carfoin.getFondos) fondo.isin].contains(newFondo.isin);
     if (existe) {
       _showMsg(
         msg: 'El fondo con ISIN ${newFondo.isin} ya existe en esta cartera.',
@@ -459,7 +518,10 @@ class _PageCarteraState extends State<PageCartera> {
       );
     } else {
       //await _db.insertFondo(carteraOn, newFondo);
-      await _insertFondo(newFondo);
+
+      //await _insertFondo(newFondo);
+      await carfoin.insertFondoCartera(newFondo);
+
       //await _updateFondos();
       if (_isAutoUpdate) {
         await _dialogAutoUpdate(context, newFondo);
@@ -467,7 +529,8 @@ class _PageCarteraState extends State<PageCartera> {
       } else {
         _showMsg(msg: 'Fondo añadido');
       }
-      await _updateFondos();
+      //await _updateFondos();
+      await carfoin.updateFondos(_isFondosByOrder);
     }
   }
 
@@ -476,7 +539,8 @@ class _PageCarteraState extends State<PageCartera> {
       _isFondosByOrder = !_isFondosByOrder;
     });
     PreferencesService.saveBool(kKeyByOrderFondosPref, _isFondosByOrder);
-    await _updateFondos();
+    //await _updateFondos();
+    await carfoin.updateFondos(_isFondosByOrder);
   }
 
   /*void _sortFondos() async {
@@ -497,12 +561,14 @@ class _PageCarteraState extends State<PageCartera> {
   }*/
 
   void _deleteAllConfirm(BuildContext context) {
-    if (_db.dbFondos.isEmpty) {
+    //if (_db.dbFondos.isEmpty) {
+    if (carfoin.getFondos.isEmpty) {
       _showMsg(msg: 'Nada que eliminar');
     } else {
       showDialog(
           context: context,
           builder: (BuildContext ctx) {
+            var carteraOn = context.read<CarfoinProvider>().getCartera!;
             return AlertDialog(
               title: const Text('Eliminar todo'),
               content: Text(
@@ -520,13 +586,16 @@ class _PageCarteraState extends State<PageCartera> {
                     //textStyle: const TextStyle(color: Colors.white),
                   ),
                   onPressed: () async {
-                    for (var fondo in _db.dbFondos) {
+                    //for (var fondo in _db.dbFondos) {
+                    for (var fondo in carfoin.getFondos) {
                       //await _db.deleteAllValoresInFondo(carteraOn, fondo);
                       //await _db.deleteFondoInCartera(carteraOn, fondo);
                       //await _deleteAllValores(fondo);
-                      await _deleteFondo(fondo);
+                      //await _deleteFondo(fondo);
+                      await carfoin.deleteFondo(fondo);
                     }
-                    await _updateFondos();
+                    //await _updateFondos();
+                    await carfoin.updateFondos(_isFondosByOrder);
                     Navigator.of(context).pop();
                   },
                 ),

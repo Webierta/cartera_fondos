@@ -1,7 +1,7 @@
 //import 'package:cartera_fondos/models/valor.dart';
 import 'dart:math';
 
-import 'package:cartera_fondos/models/operacion.dart';
+//import 'package:cartera_fondos/models/operacion.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -16,10 +16,10 @@ class MainFondo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     //TODO: PROVIDER carfoin ????
-    final carteraOn = context.read<CarfoinProvider>().getCartera;
-    final fondoOn = context.read<CarfoinProvider>().getFondo!;
-    final valoresOn = context.read<CarfoinProvider>().getValores;
-    final operacionesOn = context.read<CarfoinProvider>().getOperaciones;
+    //final carteraOn = context.read<CarfoinProvider>().getCartera;
+    final fondoOn = context.watch<CarfoinProvider>().getFondo!;
+    final valoresOn = context.watch<CarfoinProvider>().getValores;
+    final operacionesOn = context.watch<CarfoinProvider>().getOperaciones;
 
     double? _getDiferencia() {
       if (valoresOn.length > 1) {
@@ -195,10 +195,7 @@ class MainFondo extends StatelessWidget {
                     : Container(
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         decoration: BoxDecoration(
-                          border: Border.all(
-                            color: Colors.blue,
-                            width: 2,
-                          ),
+                          border: Border.all(color: Colors.blue, width: 2),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(

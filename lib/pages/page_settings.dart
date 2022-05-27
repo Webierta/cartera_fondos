@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 //import '../routes.dart';
+import '../routes.dart';
 import '../services/preferences_service.dart';
 import '../utils/k_constantes.dart';
 import '../widgets/my_drawer.dart';
@@ -41,10 +42,19 @@ class _PageSettingsState extends State<PageSettings> {
       onWillPop: () async => false,
       child: Scaffold(
         appBar: AppBar(
-          /*leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.home),
+              onPressed: () {
+                ScaffoldMessenger.of(context).removeCurrentSnackBar();
+                Navigator.of(context).pushNamed(RouteGenerator.homePage);
+              },
+            ),
+          ],
+          /* leading: IconButton(
+            icon: const Icon(Icons.home),
             onPressed: () {
-              //ScaffoldMessenger.of(context).removeCurrentSnackBar();
+              ScaffoldMessenger.of(context).removeCurrentSnackBar();
               Navigator.of(context).pushNamed(RouteGenerator.homePage);
             },
           ),*/
@@ -71,6 +81,7 @@ class _PageSettingsState extends State<PageSettings> {
             ListTile(
               leading: const Icon(Icons.sort_by_alpha),
               title: const Text('Fondos ordenados por nombre'),
+              subtitle: const Text('Por defecto se ordenan por fecha de creación o actualización'),
               trailing: Switch(
                 value: _isFondosByOrder,
                 onChanged: (value) {
@@ -81,7 +92,8 @@ class _PageSettingsState extends State<PageSettings> {
             ),
             ListTile(
               leading: const Icon(Icons.sync),
-              title: const Text('Obtener último valor al añadir Fondo'),
+              title: const Text('Actualizar último valor al añadir Fondo'),
+              subtitle: const Text('Recomendado para obtener la divisa del fondo'),
               trailing: Switch(
                 value: _isAutoUpdate,
                 onChanged: (value) {

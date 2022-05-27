@@ -32,7 +32,7 @@ class _DialogScreenState extends State<DialogScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance?.addPostFrameCallback((_) async {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       await showDialog(
         context: context,
         barrierDismissible: true,

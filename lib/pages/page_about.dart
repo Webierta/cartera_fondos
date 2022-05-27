@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../routes.dart';
 import '../widgets/my_drawer.dart';
 
 class PageAbout extends StatelessWidget {
@@ -10,12 +11,17 @@ class PageAbout extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('ABOUT'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.home),
+            onPressed: () {
+              ScaffoldMessenger.of(context).removeCurrentSnackBar();
+              Navigator.of(context).pushNamed(RouteGenerator.homePage);
+            },
+          ),
+        ],
       ),
-      endDrawer: const MyDrawer(),
+      drawer: const MyDrawer(),
       body: Text('ABOUT'),
     );
   }

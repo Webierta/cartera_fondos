@@ -12,7 +12,8 @@ class GraficoChart extends StatelessWidget {
   Widget build(BuildContext context) {
     //final carfoin = Provider.of<CarfoinProvider>(context);
     //final valores = carfoin.getValores;
-    final valores = context.read<CarfoinProvider>().getValores;
+    //final valores = context.read<CarfoinProvider>().getValores;
+    final valores = context.watch<CarfoinProvider>().getValores;
 
     final List<double> precios = valores.reversed.map((entry) => entry.precio).toList();
     final List<int> fechas = valores.reversed.map((entry) => entry.date).toList();

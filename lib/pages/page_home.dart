@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/carfoin_provider.dart';
-import '../models/cartera.dart';
+//import '../models/cartera.dart';
 //import '../models/fondo.dart';
 import '../routes.dart';
 import '../services/preferences_service.dart';
-import '../services/sqlite.dart';
+//import '../services/sqlite.dart';
 import '../utils/k_constantes.dart';
 import '../widgets/loading_progress.dart';
 import '../widgets/my_drawer.dart';
@@ -23,12 +23,14 @@ class PageHome extends StatefulWidget {
 }
 
 class _PageHomeState extends State<PageHome> {
-  late Sqlite _db;
+  //late Sqlite _db;
   late TextEditingController _controller;
-  var carteras = <Cartera>[];
+  //var carteras = <Cartera>[];
   bool _isCarterasByOrder = false;
   //Map<int, List<Fondo>> mapCarteraFondos = {};
-  Map<int, int> mapIdCarteraNFondos = {};
+  //Map<int, int> mapIdCarteraNFondos = {};
+
+  late CarfoinProvider carfoin;
 
   getSharedPrefs() async {
     await PreferencesService.getBool(kKeyByOrderCarterasPref).then((value) {
@@ -40,14 +42,31 @@ class _PageHomeState extends State<PageHome> {
   void initState() {
     getSharedPrefs();
     _controller = TextEditingController();
-    _db = Sqlite();
+    /*_db = Sqlite();
     _db.openDb().whenComplete(() async {
-      await _updateDbCarteras();
+      //await _updateDbCarteras();
+      carfoin = context.read<CarfoinProvider>();
+      await carfoin.updateDbCarteras(_isCarterasByOrder);
+      //await refreshUI();
+    });*/
+
+    carfoin = context.read<CarfoinProvider>();
+    carfoin.openDb().whenComplete(() async {
+      await carfoin.updateDbCarteras(_isCarterasByOrder);
     });
+
     super.initState();
   }
 
-  _updateDbCarteras() async {
+  /*refreshUI() async {
+    var carteras = context.read<CarfoinProvider>().getCarteras;
+    for (var cartera in carteras) {
+      await context.read<CarfoinProvider>().updateDbFondos(cartera);
+      setState(() => mapIdCarteraNFondos[cartera.id] = _db.dbNumFondos);
+    }
+  }*/
+
+  /*_updateDbCarteras() async {
     //_byOrder ? await _db.getCarterasSort() : await _db.getCarteras();
     await _db.getCarteras(byOrder: _isCarterasByOrder);
     setState(() => carteras = _db.dbCarteras);
@@ -68,7 +87,7 @@ class _PageHomeState extends State<PageHome> {
     Map<String, dynamic> row = {'input': name};
     final int id = await _db.insertCartera(row);
     return id;
-  }
+  }*/
 
   _ordenarCarteras() async {
     /*List<Cartera> carterasSort = <Cartera>[];
@@ -80,7 +99,8 @@ class _PageHomeState extends State<PageHome> {
     setState(() => _isCarterasByOrder = !_isCarterasByOrder);
     //}
     PreferencesService.saveBool(kKeyByOrderCarterasPref, _isCarterasByOrder);
-    await _updateDbCarteras();
+    //await _updateDbCarteras();
+    await carfoin.updateDbCarteras(_isCarterasByOrder);
     //}
   }
 
@@ -119,10 +139,10 @@ class _PageHomeState extends State<PageHome> {
     }
   }*/
 
-  _createTableCartera(int id) async {
+  /*_createTableCartera(int id) async {
     var tableCartera = '_$id';
     await _db.createTableCartera(tableCartera);
-  }
+  }*/
 
   /*_clearCarfoin() async {
     //await _db.deleteAllCarteras();
@@ -135,7 +155,7 @@ class _PageHomeState extends State<PageHome> {
     await _db.eliminaTabla(tableFondo);
   }*/
 
-  _deleteCartera(Cartera cartera) async {
+  /*_deleteCartera(Cartera cartera) async {
     var tableCartera = '_${cartera.id}';
     await _db.getFondos(tableCartera);
     if (_db.dbFondos.isNotEmpty) {
@@ -149,7 +169,7 @@ class _PageHomeState extends State<PageHome> {
     //await _db.deleteAllFondos(tableCartera);
     await _db.eliminaTabla(tableCartera);
     await _db.deleteCartera(cartera);
-  }
+  }*/
 
   @override
   void dispose() {
@@ -184,9 +204,11 @@ class _PageHomeState extends State<PageHome> {
   @override
   Widget build(BuildContext context) {
     final carfoin = context.read<CarfoinProvider>();
+    var carteras = context.watch<CarfoinProvider>().getCarteras;
 
     return FutureBuilder<bool>(
-      future: _db.openDb(),
+      //future: _db.openDb(),
+      future: carfoin.openDb(),
       builder: (context, snapshot) {
         /*if (snapshot.connectionState == ConnectionState.waiting) {
           return const LoadingProgress(titulo: 'Recuperando carteras...', subtitulo: 'Cargando...');
@@ -247,10 +269,26 @@ class _PageHomeState extends State<PageHome> {
                       itemCount: carteras.length,
                       itemBuilder: (context, index) {
                         //int nFondos = mapCarteraFondos[carteras[index].id]?.length ?? 0;
-                        int nFondos = mapIdCarteraNFondos[carteras[index].id] ?? 0;
+                        //int nFondos = mapIdCarteraNFondos[carteras[index].id] ?? 0;
+                        //int nFondos2 = await carfoin.getNumberFondos(carteras[index]);
+                        //int nFondos = carfoin.getNumberFondos(carteras[index]);
+                        //int nFondos = carfoin.getNFondos;
+                        //int nFondos = context.read<CarfoinProvider>().getNFondos;
+                        //int nFondos = _db.dbNumFondos;
+                        int nFondos = carfoin.getMapIdCarteraNFondos[carteras[index].id] ?? 0;
                         return Dismissible(
                           key: UniqueKey(),
                           direction: DismissDirection.endToStart,
+                          background: Container(
+                            color: Colors.red,
+                            margin: const EdgeInsets.symmetric(horizontal: 15),
+                            alignment: Alignment.centerRight,
+                            child: const Padding(
+                              padding: EdgeInsets.all(10.0),
+                              child: Icon(Icons.delete, color: Colors.white),
+                            ),
+                          ),
+                          onDismissed: (_) => _onDismissed(index),
                           child: Card(
                             child: ListTile(
                               //leading: const Icon(Icons.business_center, size: 32),
@@ -275,16 +313,6 @@ class _PageHomeState extends State<PageHome> {
                               },
                             ),
                           ),
-                          background: Container(
-                            color: Colors.red,
-                            margin: const EdgeInsets.symmetric(horizontal: 15),
-                            alignment: Alignment.centerRight,
-                            child: const Padding(
-                              padding: EdgeInsets.all(10.0),
-                              child: Icon(Icons.delete, color: Colors.white),
-                            ),
-                          ),
-                          onDismissed: (_) => _onDismissed(index),
                         );
                       },
                     ),
@@ -300,17 +328,22 @@ class _PageHomeState extends State<PageHome> {
     // no elimina fondos de cartera fantasma
     //await _db.deleteCarteraInCarteras(carteras[index]);
     //await _deleteCartera(carteras[index]);
-    var nameTablas = await _db.getNameTables();
+    /*var nameTablas = await _db.getNameTables();
     for (var name in nameTablas) {
       print(name);
-    }
+    }*/
+    var carteras = carfoin.getCarteras;
+    //var carteras = context.read<CarfoinProvider>().getCarteras;
     print('ELIMINANDO ${carteras[index].id} ${carteras[index].name}');
-    await _deleteCartera(carteras[index]);
-    await _updateDbCarteras();
-    var nameTablas2 = await _db.getNameTables();
+    //await _deleteCartera(carteras[index]);
+    //await _updateDbCarteras();
+
+    await carfoin.deleteCartera(carteras[index]);
+    await carfoin.updateDbCarteras(_isCarterasByOrder);
+    /*var nameTablas2 = await _db.getNameTables();
     for (var name in nameTablas2) {
       print(name);
-    }
+    }*/
   }
 
   Future<void> _carteraInput(BuildContext context) async {
@@ -376,15 +409,20 @@ class _PageHomeState extends State<PageHome> {
       var _name = _alpha.startsWith(RegExp(r'[0-9]')) ? '_$_alpha' : _alpha;
       _controller.value.text.replaceAll(RegExp('[^a-zA-Z0-9_]'), '');*/
       //var existe = [for (var cartera in _db.dbCarteras) cartera.name].contains(_input);
-      var existe = [for (var cartera in _db.dbCarteras) cartera.name].contains(_input);
+
+      var existe = [for (var cartera in carfoin.getCarteras) cartera.name].contains(_input);
+      //var existe = [for (var cartera in _db.dbCarteras) cartera.name].contains(_input);
       if (existe) {
         _controller.clear();
         Navigator.pop(context);
         _showMsg(msg: 'Ya existe una cartera con ese nombre.', color: Colors.red);
       } else {
-        int id = await _insertCartera(_input);
+        /*int id = await _insertCartera(_input);
         await _createTableCartera(id);
-        await _updateDbCarteras();
+        await _updateDbCarteras();*/
+        int id = await carfoin.insertCartera(_input);
+        await carfoin.createTableCartera(id);
+        await carfoin.updateDbCarteras(_isCarterasByOrder);
         _controller.clear();
         Navigator.pop(context);
       }
@@ -411,18 +449,21 @@ class _PageHomeState extends State<PageHome> {
                   //textStyle: const TextStyle(color: Colors.white),
                 ),
                 onPressed: () async {
-                  var nameTablas = await _db.getNameTables();
+                  /*var nameTablas = await _db.getNameTables();
                   for (var name in nameTablas) {
                     print(name);
+                  }*/
+                  //for (var cartera in _db.dbCarteras) {
+                  for (var cartera in carfoin.getCarteras) {
+                    //await _deleteCartera(cartera);
+                    await carfoin.deleteCartera(cartera);
                   }
-                  for (var cartera in _db.dbCarteras) {
-                    await _deleteCartera(cartera);
-                  }
-                  await _updateDbCarteras();
-                  var nameTablas2 = await _db.getNameTables();
+                  //await _updateDbCarteras();
+                  await carfoin.updateDbCarteras(_isCarterasByOrder);
+                  /*var nameTablas2 = await _db.getNameTables();
                   for (var name in nameTablas2) {
                     print(name);
-                  }
+                  }*/
                   Navigator.of(context).pop();
                 },
               ),
