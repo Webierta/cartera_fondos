@@ -6,23 +6,20 @@ import '../models/carfoin_provider.dart';
 
 class PageInputRange extends StatefulWidget {
   const PageInputRange({Key? key}) : super(key: key);
-
   @override
   State<PageInputRange> createState() => _PageInputRangeState();
 }
 
 class _PageInputRangeState extends State<PageInputRange> {
+  DateTimeRange? _dateRange;
   final _initDateRange = DateTimeRange(
     start: DateTime.now().subtract(const Duration(days: 5)),
     end: DateTime.now(),
   );
 
-  DateTimeRange? _dateRange;
-
   @override
   Widget build(BuildContext context) {
     final fondoOn = context.read<CarfoinProvider>().getFondo!;
-
     return Scaffold(
       appBar: AppBar(title: const Text('Descarga valores')),
       body: ListView(
@@ -54,7 +51,6 @@ class _PageInputRangeState extends State<PageInputRange> {
                       child: FittedBox(
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          //crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
                               '${DateFormat('dd/MM/yyyy').format(_dateRange?.start ?? _initDateRange.start)} - '
@@ -115,7 +111,6 @@ class _PageInputRangeState extends State<PageInputRange> {
         start: _initDateRange.start,
         end: _initDateRange.end,
       ),
-      //firstDate: DateTime(2019),
       firstDate: DateTime(2018, 1, 1),
       lastDate: DateTime.now(),
       //currentDate: DateTime.now(),
@@ -136,10 +131,5 @@ class _PageInputRangeState extends State<PageInputRange> {
     );
 
     return newRange;
-    /*if (newRange == null) {
-      print('FECHAS NO SELECCIONADAS');
-    } else {
-      setState(() => _dateRange = newRange);
-    }*/
   }
 }

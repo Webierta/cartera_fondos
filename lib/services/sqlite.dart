@@ -405,6 +405,10 @@ class Sqlite {
     await _db.delete(tableFondo, where: '$columnDate = ?', whereArgs: [date]);
   }
 
+  Future<void> deleteOperacion(String tableFondo, int date) async {
+    await openDb();
+  }
+
   /*Future<void> deleteAllFondos(String tableCartera) async {
     await openDb();
     //await _db.delete(tableCartera);

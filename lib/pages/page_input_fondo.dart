@@ -3,15 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../models/carfoin_provider.dart';
-//import '../models/cartera.dart';
 import '../models/fondo.dart';
 import '../services/api_service.dart';
 
 class PageInputFondo extends StatefulWidget {
-  //final Cartera cartera;
-  //const PageInputFondo({Key? key, required this.cartera}) : super(key: key);
   const PageInputFondo({Key? key}) : super(key: key);
-
   @override
   State<PageInputFondo> createState() => _PageInputFondoState();
 }
@@ -19,7 +15,6 @@ class PageInputFondo extends StatefulWidget {
 class _PageInputFondoState extends State<PageInputFondo> {
   late TextEditingController _controller;
   late ApiService apiService;
-
   bool? _validIsin;
   Fondo? locatedFond;
   bool _buscando = false;
@@ -43,11 +38,8 @@ class _PageInputFondoState extends State<PageInputFondo> {
   @override
   Widget build(BuildContext context) {
     var carteraOn = context.read<CarfoinProvider>().getCartera!;
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Añadir Fondo'),
-      ),
+      appBar: AppBar(title: const Text('Añadir Fondo')),
       body: ListView(
         padding: const EdgeInsets.all(10),
         children: [
@@ -88,9 +80,7 @@ class _PageInputFondoState extends State<PageInputFondo> {
                   ),
                   subtitle: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    //crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      //ElevatedButton.icon(onPressed: onPressed, icon: icon, label: label)
                       ElevatedButton.icon(
                         icon: const Icon(Icons.security),
                         label: const Text('Validar'),
@@ -139,9 +129,9 @@ class _PageInputFondoState extends State<PageInputFondo> {
 
   Icon _resultIsValid() {
     if (_validIsin == true) {
-      return const Icon(Icons.check_box, color: Colors.green);
+      return const Icon(Icons.check_box, color: Color(0xFF4CAF50));
     } else if (_validIsin == false) {
-      return const Icon(Icons.disabled_by_default, color: Colors.red);
+      return const Icon(Icons.disabled_by_default, color: Color(0xFFF44336));
     } else {
       return const Icon(Icons.check_box_outline_blank);
     }

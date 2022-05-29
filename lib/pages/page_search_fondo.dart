@@ -7,7 +7,6 @@ import '../models/fondo.dart';
 
 class PageSearchFondo extends StatefulWidget {
   const PageSearchFondo({Key? key}) : super(key: key);
-
   @override
   State<PageSearchFondo> createState() => _PageSearchFondoState();
 }
@@ -33,23 +32,13 @@ class _PageSearchFondoState extends State<PageSearchFondo> {
   }
 
   void _runFilter(String enteredKeyword) {
-    List<Map<String, dynamic>> results = [];
-    results = enteredKeyword.isEmpty
+    List<Map<String, dynamic>> results = enteredKeyword.isEmpty
         ? _allFondos
         : _allFondos
             .where((fondo) =>
                 fondo['name']?.toUpperCase().contains(enteredKeyword.toUpperCase()) ||
                 fondo['isin']?.toUpperCase().contains(enteredKeyword.toUpperCase()))
             .toList();
-    /*if (enteredKeyword.isEmpty) {
-      results = _allFondos;
-    } else {
-      results = _allFondos
-          .where((fondo) =>
-              fondo['name']?.toUpperCase().contains(enteredKeyword.toUpperCase()) ||
-              fondo['isin']?.toUpperCase().contains(enteredKeyword.toUpperCase()))
-          .toList();
-    }*/
     setState(() => _filterFondos = results);
   }
 

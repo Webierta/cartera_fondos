@@ -74,6 +74,7 @@ class CarfoinProvider with ChangeNotifier {
     for (var cartera in _db.dbCarteras) {
       await updateDbFondos(cartera);
     }
+    // necesario notify ??
     notifyListeners();
   }
 
@@ -81,8 +82,8 @@ class CarfoinProvider with ChangeNotifier {
     var _db = Sqlite();
     await _db.openDb();
     var tableCartera = '_${cartera.id}';
+    // ALTERNATIVA? : getFondos(tableCartera).length
     await _db.getNumberFondos(tableCartera);
-    //setNFondos = _db.dbNumFondos;
     _mapIdCarteraNFondos[cartera.id] = _db.dbNumFondos;
     notifyListeners();
   }
@@ -91,6 +92,7 @@ class CarfoinProvider with ChangeNotifier {
     var _db = Sqlite();
     await _db.openDb();
     var tableCartera = '_${cartera.id}';
+    // necesario return ??
     return await _db.getNumberFondos(tableCartera);
   }
 
@@ -129,6 +131,11 @@ class CarfoinProvider with ChangeNotifier {
     await _db.deleteCartera(cartera);
     notifyListeners();
   }
+
+  /*_clearCarfoin() async {
+    //await _db.deleteAllCarteras();
+    await _db.clearCarfoin();
+  }*/
 
   updateFondos(bool _isFondosByOrder) async {
     //await getFondosCartera(_isFondosByOrder);
@@ -193,6 +200,7 @@ class CarfoinProvider with ChangeNotifier {
   updateValores() async {
     var _db = Sqlite();
     await _db.openDb();
+    // await getFondos()
     var tableCartera = '_${_carteraOn!.id}';
     await _db.getFondos(tableCartera);
     var tableFondo = '_${_carteraOn!.id}' + _fondoOn!.isin;
@@ -270,6 +278,7 @@ class CarfoinProvider with ChangeNotifier {
     var _db = Sqlite();
     await _db.openDb();
     var tableFondo = '_${_carteraOn!.id}' + _fondoOn!.isin;
+    //await _db.deleteAllValores(tableFondo);
     await _db.eliminaTabla(tableFondo);
     notifyListeners();
   }
@@ -281,4 +290,27 @@ class CarfoinProvider with ChangeNotifier {
     await _db.deleteValor(tableFondo, date);
     notifyListeners();
   }
+
+  insertOperacion(Operacion op) async {
+    var _db = Sqlite();
+    await _db.openDb();
+    var tableFondo = '_${_carteraOn!.id}${_fondoOn!.isin}';
+    Map<String, dynamic> row = {
+      'date': op.date,
+      'precio': op.precio,
+      'tipo': op.tipo,
+      'participaciones': op.participaciones
+    };
+    await _db.insertOperacion(tableFondo, row);
+    notifyListeners();
+  }
+
+  // TODO: pendiente para eliminar operacion sin eliminar valor
+  /*eliminarOperacion(Operacion op) async {
+    var _db = Sqlite();
+    await _db.openDb();
+    var tableFondo = '_${_carteraOn!.id}' + _fondoOn!.isin;
+    // ....
+    notifyListeners();
+  }*/
 }

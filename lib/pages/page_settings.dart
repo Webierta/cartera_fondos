@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-//import '../routes.dart';
 import '../routes.dart';
 import '../services/preferences_service.dart';
 import '../utils/k_constantes.dart';
@@ -8,7 +7,6 @@ import '../widgets/my_drawer.dart';
 
 class PageSettings extends StatefulWidget {
   const PageSettings({Key? key}) : super(key: key);
-
   @override
   State<PageSettings> createState() => _PageSettingsState();
 }
@@ -42,6 +40,7 @@ class _PageSettingsState extends State<PageSettings> {
       onWillPop: () async => false,
       child: Scaffold(
         appBar: AppBar(
+          title: const Text('Ajustes'),
           actions: [
             IconButton(
               icon: const Icon(Icons.home),
@@ -51,14 +50,6 @@ class _PageSettingsState extends State<PageSettings> {
               },
             ),
           ],
-          /* leading: IconButton(
-            icon: const Icon(Icons.home),
-            onPressed: () {
-              ScaffoldMessenger.of(context).removeCurrentSnackBar();
-              Navigator.of(context).pushNamed(RouteGenerator.homePage);
-            },
-          ),*/
-          title: const Text('Ajustes'),
         ),
         drawer: const MyDrawer(),
         body: ListView(
@@ -76,7 +67,7 @@ class _PageSettingsState extends State<PageSettings> {
                 },
               ),
             ),
-            const Divider(color: Colors.grey, height: 20),
+            const Divider(color: Color(0xFF9E9E9E), height: 20),
             const Text('Fondos'),
             ListTile(
               leading: const Icon(Icons.sort_by_alpha),
@@ -102,7 +93,7 @@ class _PageSettingsState extends State<PageSettings> {
                 },
               ),
             ),
-            const Divider(color: Colors.grey, height: 20),
+            const Divider(color: Color(0xFF9E9E9E), height: 20),
           ],
         ),
       ),

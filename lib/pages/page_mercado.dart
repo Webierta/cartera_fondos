@@ -4,35 +4,27 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../models/carfoin_provider.dart';
-import '../models/cartera.dart';
 import '../models/fondo.dart';
 import '../models/operacion.dart';
-import '../models/valor.dart';
 import '../routes.dart';
 import '../services/api_service.dart';
-import '../services/sqlite.dart';
 import '../utils/fecha_util.dart';
 import '../widgets/loading.dart';
 
 class PageMercado extends StatefulWidget {
   const PageMercado({Key? key}) : super(key: key);
-
   @override
   State<PageMercado> createState() => _MercadoState();
 }
 
 class _MercadoState extends State<PageMercado> {
-  late Sqlite _db;
+  late CarfoinProvider carfoin;
   late ApiService apiService;
-  late Cartera carteraOn;
-  late Fondo fondoOn;
-
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _partController = TextEditingController();
   final TextEditingController _precioController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool? _isValido = false;
-
   final _isSelected = <bool>[true, false];
   var _tipo = true;
   int _date = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -41,34 +33,14 @@ class _MercadoState extends State<PageMercado> {
 
   @override
   void initState() {
-    carteraOn = context.read<CarfoinProvider>().getCartera!;
-    fondoOn = context.read<CarfoinProvider>().getFondo!;
-    _db = Sqlite();
-    _db.openDb().whenComplete(() async {
-      //await _updateMercado();
+    carfoin = context.read<CarfoinProvider>();
+    carfoin.openDb().whenComplete(() {
+      apiService = ApiService();
+      _dateController.text = FechaUtil.epochToString(_date);
+      _partController.text = _participaciones.toString();
+      _precioController.text = _precio.toString();
     });
-    apiService = ApiService();
-    _dateController.text = FechaUtil.epochToString(_date);
-    _partController.text = _participaciones.toString();
-    _precioController.text = _precio.toString();
     super.initState();
-  }
-
-  /*_insertValor(Valor valor) async {
-    var tableFondo = '_${carteraOn.id}' + fondoOn.isin;
-    Map<String, dynamic> row = {'date': valor.date, 'precio': valor.precio};
-    await _db.insertVL(tableFondo, row);
-  }*/
-
-  _insertOperacion(Operacion op) async {
-    var tableFondo = '_${carteraOn.id}' + fondoOn.isin;
-    Map<String, dynamic> row = {
-      'date': op.date,
-      'precio': op.precio,
-      'tipo': op.tipo,
-      'participaciones': op.participaciones
-    };
-    await _db.insertOperacion(tableFondo, row);
   }
 
   _resetControllers() {
@@ -87,6 +59,8 @@ class _MercadoState extends State<PageMercado> {
 
   @override
   Widget build(BuildContext context) {
+    var carteraOn = context.read<CarfoinProvider>().getCartera!;
+    var fondoOn = context.read<CarfoinProvider>().getFondo!;
     return Scaffold(
       appBar: AppBar(
           leading: IconButton(
@@ -121,6 +95,21 @@ class _MercadoState extends State<PageMercado> {
             child: Center(
               child: FittedBox(
                 child: ToggleButtons(
+                  isSelected: _isSelected,
+                  color: const Color(0xFF9E9E9E),
+                  selectedColor: const Color(0xFF2196F3),
+                  fillColor: const Color(0xFFBBDEFB),
+                  borderColor: const Color(0xFF9E9E9E),
+                  selectedBorderColor: const Color(0xFF2196F3),
+                  borderRadius: const BorderRadius.all(Radius.circular(4)),
+                  onPressed: (int index) {
+                    setState(() {
+                      _isSelected[0] = index == 0 ? true : false;
+                      _isSelected[1] = index == 0 ? false : true;
+                      _tipo = index == 0 ? true : false;
+                    });
+                    _resetControllers();
+                  },
                   children: [
                     Padding(
                       padding: const EdgeInsets.all(8.0),
@@ -137,29 +126,6 @@ class _MercadoState extends State<PageMercado> {
                       ),
                     ),
                   ],
-                  isSelected: _isSelected,
-                  color: const Color(0xFF9E9E9E),
-                  selectedColor: const Color(0xFF2196F3),
-                  fillColor: const Color(0xFFBBDEFB),
-                  borderColor: const Color(0xFF9E9E9E),
-                  selectedBorderColor: const Color(0xFF2196F3),
-                  borderRadius: const BorderRadius.all(Radius.circular(4)),
-                  onPressed: (int index) {
-                    if (index == 0) {
-                      setState(() {
-                        _isSelected[0] = true;
-                        _isSelected[1] = false;
-                        _tipo = true;
-                      });
-                    } else if (index == 1) {
-                      setState(() {
-                        _isSelected[0] = false;
-                        _isSelected[1] = true;
-                        _tipo = false;
-                      });
-                    }
-                    _resetControllers();
-                  },
                 ),
               ),
             ),
@@ -239,10 +205,11 @@ class _MercadoState extends State<PageMercado> {
                       errorStyle: const TextStyle(fontSize: 0, height: 0),
                       labelText: 'Precio',
                       suffixIcon: IconButton(
-                        icon: const Icon(Icons.download, color: Colors.blue),
+                        icon: const Icon(Icons.download, color: Color(0xFF2196F3)),
                         onPressed: () async {
                           Loading(context).openDialog(title: 'Obteniendo valor liquidativo...');
-                          var precioApi = await _getPrecioApi(context);
+                          var precioApi = await _getPrecioApi(context, fondoOn);
+                          if (!mounted) return;
                           Loading(context).closeDialog();
                           if (precioApi != null) {
                             setState(() {
@@ -250,6 +217,7 @@ class _MercadoState extends State<PageMercado> {
                               _precioController.text = precioApi.toString();
                             });
                           } else {
+                            if (!mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content:
@@ -322,23 +290,12 @@ class _MercadoState extends State<PageMercado> {
 
   _submit(BuildContext context) async {
     if (_formKey.currentState!.validate()) {
-      //Valor newValor = Valor(date: _date, precio: _precio);
       // TODO: valores duplicados ??
-      // CHECK SI NO EXISTE (Y TAMBIEN CHECK DESDE PAGE FONDO)
-      //await _db.insertVL(carteraOn, fondoOn, newValor);
-      //await _insertValor(newValor);
-      //await _compareLastValor();
-      // TODO: remove or hide ??
-      print('SUBMIT');
-      print('$_tipo');
-      print('$_date');
-      print('$_participaciones');
-      print('$_precio');
-
       int tipoOp = _tipo ? 1 : 0;
       Operacion newOp =
           Operacion(tipo: tipoOp, date: _date, participaciones: _participaciones, precio: _precio);
-      await _insertOperacion(newOp);
+      await carfoin.insertOperacion(newOp);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).removeCurrentSnackBar();
       Navigator.of(context).pushNamed(RouteGenerator.fondoPage);
     }
@@ -353,49 +310,15 @@ class _MercadoState extends State<PageMercado> {
       firstDate: DateTime(2015, 1, 1),
       lastDate: DateTime.now(),
     );
-    print('PICKED');
-    print(picked.toString());
     return picked;
   }
 
-  Future<double?>? _getPrecioApi(BuildContext context) async {
+  Future<double?>? _getPrecioApi(BuildContext context, Fondo fondo) async {
     String fromAndTo = FechaUtil.epochToString(_date, formato: 'yyyy-MM-dd');
-    final getDateApiRange = await apiService.getDataApiRange(fondoOn.isin, fromAndTo, fromAndTo);
+    final getDateApiRange = await apiService.getDataApiRange(fondo.isin, fromAndTo, fromAndTo);
     if (getDateApiRange != null && getDateApiRange.isNotEmpty) {
       return getDateApiRange.first.price;
     }
     return null;
   }
-
-  /*Future<bool> _compareLastValor() async {
-    await _db.getValoresByOrder(carteraOn, fondoOn);
-    var valores = _db.dbValoresByOrder;
-    if (valores.isNotEmpty) {
-      var lastValor = Valor(date: valores.first.date, precio: valores.first.precio);
-      var lastPrecio = valores.first.precio;
-      var lastDate = valores.first.date;
-      if (fondoOn.lastDate == null) {
-        fondoOn
-          ..lastPrecio = lastPrecio
-          ..lastDate = lastDate;
-        await _db.insertDataApi(carteraOn, fondoOn, lastPrecio: lastPrecio, lastDate: lastDate);
-        await _db.insertVL(carteraOn, fondoOn, lastValor);
-        //await _updateValores();
-        return true;
-      } else if (fondoOn.lastDate! < lastDate) {
-        fondoOn
-          ..lastPrecio = lastPrecio
-          ..lastDate = lastDate;
-        _db.insertDataApi(carteraOn, fondoOn, lastPrecio: lastPrecio, lastDate: lastDate);
-        _db.insertVL(carteraOn, fondoOn, lastValor);
-        //await _updateValores();
-        return true;
-      } else {
-        //await _updateValores();
-        return false;
-      }
-    }
-    //await _updateValores();
-    return false;
-  }*/
 }

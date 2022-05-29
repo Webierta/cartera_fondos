@@ -1,11 +1,10 @@
-//import 'package:cartera_fondos/models/valor.dart';
 import 'dart:math';
 
-//import 'package:cartera_fondos/models/operacion.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../models/valor.dart';
 import '../routes.dart';
 import '../models/carfoin_provider.dart';
 import '../utils/fecha_util.dart';
@@ -17,6 +16,7 @@ class MainFondo extends StatelessWidget {
   Widget build(BuildContext context) {
     //TODO: PROVIDER carfoin ????
     //final carteraOn = context.read<CarfoinProvider>().getCartera;
+    final carfoin = context.read<CarfoinProvider>();
     final fondoOn = context.watch<CarfoinProvider>().getFondo!;
     final valoresOn = context.watch<CarfoinProvider>().getValores;
     final operacionesOn = context.watch<CarfoinProvider>().getOperaciones;
@@ -52,7 +52,7 @@ class MainFondo extends StatelessWidget {
       }
       final List<double> precios = valoresOn.reversed.map((entry) => entry.precio).toList();
       final List<int> fechas = valoresOn.reversed.map((entry) => entry.date).toList();
-      return FechaUtil.epochToString(fechas[precios.indexOf(_getPrecioMin())]);
+      return FechaUtil.epochToString(fechas[precios.indexOf(_getPrecioMin())], formato: 'dd/MM/yy');
     }
 
     String _getFechaMax() {
@@ -61,7 +61,7 @@ class MainFondo extends StatelessWidget {
       }
       final List<double> precios = valoresOn.reversed.map((entry) => entry.precio).toList();
       final List<int> fechas = valoresOn.reversed.map((entry) => entry.date).toList();
-      return FechaUtil.epochToString(fechas[precios.indexOf(_getPrecioMax())]);
+      return FechaUtil.epochToString(fechas[precios.indexOf(_getPrecioMax())], formato: 'dd/MM/yy');
     }
 
     double _getPrecioMedio() {
@@ -168,17 +168,100 @@ class MainFondo extends StatelessWidget {
           1;
     }
 
+    List<DataColumn> _createColumns() {
+      return const <DataColumn>[
+        DataColumn(label: Text('FECHA')),
+        DataColumn(label: Text('PART.')),
+        DataColumn(label: Text('PRECIO')),
+        DataColumn(label: Text('VALOR')),
+        DataColumn(label: Text('')),
+      ];
+    }
+
+    List<DataRow> _createRows() {
+      return [
+        for (var op in operacionesOn)
+          DataRow(cells: [
+            DataCell(Align(
+              alignment: Alignment.centerRight,
+              child: Text(FechaUtil.epochToString(op.date, formato: 'dd/MM/yy')),
+            )),
+            DataCell(Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                NumberFormat.decimalPattern('es')
+                    .format(op.tipo == 1 ? op.participaciones : op.participaciones * -1),
+                style: TextStyle(color: op.tipo == 1 ? Colors.green : Colors.red),
+              ),
+            )),
+            DataCell(Align(
+              alignment: Alignment.centerRight,
+              child: Text(NumberFormat.decimalPattern('es').format(op.precio)),
+            )),
+            DataCell(Align(
+              alignment: Alignment.centerRight,
+              child: Text(NumberFormat.decimalPattern('es')
+                  .format(double.parse((op.participaciones * op.precio).toStringAsFixed(2)))),
+            )),
+            DataCell(IconButton(
+              onPressed: () async {
+                // TODO: mejor update ?
+                await carfoin.eliminarValor(op.date);
+                await carfoin.insertValor(Valor(date: op.date, precio: op.precio));
+                await carfoin.updateValores();
+              },
+              icon: const Icon(Icons.delete_forever),
+            )),
+          ]),
+        DataRow(
+          color: MaterialStateColor.resolveWith((states) => Colors.blue),
+          cells: [
+            DataCell(Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                FechaUtil.epochToString(valoresOn.first.date, formato: 'dd/MM/yy'),
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFFFFFF)),
+              ),
+            )),
+            DataCell(Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                NumberFormat.decimalPattern('es').format(_getParticipaciones()),
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFFFFFF)),
+              ),
+            )),
+            DataCell(Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                NumberFormat.decimalPattern('es').format(valoresOn.first.precio),
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFFFFFF)),
+              ),
+            )),
+            DataCell(Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                NumberFormat.decimalPattern('es')
+                    .format(double.parse(_getPatrimonio().toStringAsFixed(2))),
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFFFFFF)),
+              ),
+            )),
+            const DataCell(Text('')),
+          ],
+        ),
+      ];
+    }
+
     return ListView(
       shrinkWrap: true,
       padding: const EdgeInsets.all(10),
       children: [
         Card(
           child: Padding(
-            padding: const EdgeInsets.all(10.0),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
             child: Column(
               children: [
                 ListTile(
-                  contentPadding: const EdgeInsets.all(10),
+                  //contentPadding: const EdgeInsets.all(10),
                   leading: const Icon(Icons.assessment, size: 32),
                   title: Text(
                     fondoOn.name,
@@ -196,7 +279,7 @@ class MainFondo extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.blue, width: 2),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -210,55 +293,69 @@ class MainFondo extends StatelessWidget {
                               style: Theme.of(context).textTheme.titleLarge,
                             ),
                             if (_getDiferencia() != null)
-                              Text(
-                                _getDiferencia()!.toStringAsFixed(2),
-                                style: TextStyle(
-                                    color: _getDiferencia()! < 0 ? Colors.red : Colors.green),
-                              ),
+                              Text(_getDiferencia()!.toStringAsFixed(2),
+                                  style: TextStyle(
+                                    color: _getDiferencia()! < 0 ? Colors.red : Colors.green,
+                                  )),
                           ],
                         ),
                       ),
-                if (valoresOn.isNotEmpty) const SizedBox(height: 10),
+                if (valoresOn.isNotEmpty) const SizedBox(height: 20),
                 if (valoresOn.length > 1)
                   Align(
-                    alignment: Alignment.centerRight,
+                    alignment: Alignment.center,
                     child: FractionallySizedBox(
-                      widthFactor: 0.7,
+                      widthFactor: 0.8,
                       child: Column(
                         children: [
                           Row(
                             children: [
-                              const Text('Mínimo'),
+                              const Text('Mínimo', style: TextStyle(fontSize: 18)),
                               const Spacer(),
-                              Text(_getFechaMin()),
+                              Text(_getFechaMin(), style: const TextStyle(fontSize: 18)),
                               const Spacer(),
-                              Text(NumberFormat.decimalPattern('es').format(_getPrecioMin())),
+                              Text(
+                                NumberFormat.decimalPattern('es').format(_getPrecioMin()),
+                                style: const TextStyle(fontSize: 18),
+                              ),
                             ],
                           ),
+                          const SizedBox(height: 10),
                           Row(
                             children: [
-                              const Text('Máximo'),
+                              const Text('Máximo', style: TextStyle(fontSize: 18)),
                               const Spacer(),
-                              Text(_getFechaMax()),
+                              Text(_getFechaMax(), style: const TextStyle(fontSize: 18)),
                               const Spacer(),
-                              Text(NumberFormat.decimalPattern('es').format(_getPrecioMax())),
+                              Text(
+                                NumberFormat.decimalPattern('es').format(_getPrecioMax()),
+                                style: const TextStyle(fontSize: 18),
+                              ),
                             ],
                           ),
+                          const SizedBox(height: 10),
                           Row(
                             children: [
-                              const Text('Media'),
+                              const Text('Media', style: TextStyle(fontSize: 18)),
                               const Spacer(),
-                              Text(NumberFormat.decimalPattern('es').format(_getPrecioMedio())),
+                              Text(
+                                NumberFormat.decimalPattern('es').format(_getPrecioMedio()),
+                                style: const TextStyle(fontSize: 18),
+                              ),
                             ],
                           ),
+                          const SizedBox(height: 10),
                           Row(
                             children: [
-                              const Text('Volatilidad'),
+                              const Text('Volatilidad', style: TextStyle(fontSize: 18)),
                               const Spacer(),
-                              //Text(NumberFormat.decimalPattern('es').format(_getVolatilidad())),
-                              Text(_getVolatilidad().toStringAsFixed(2)),
+                              Text(
+                                _getVolatilidad().toStringAsFixed(2),
+                                style: const TextStyle(fontSize: 18),
+                              ),
                             ],
                           ),
+                          const SizedBox(height: 10),
                         ],
                       ),
                     ),
@@ -270,367 +367,170 @@ class MainFondo extends StatelessWidget {
         const SizedBox(height: 10),
         Card(
           child: Padding(
-            padding: const EdgeInsets.all(10.0),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
             child: Column(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('BALANCE ECONÓMICO', style: Theme.of(context).textTheme.titleMedium),
-                    OutlinedButton.icon(
-                      label: const Text('Mercado'),
-                      icon: const Icon(Icons.shopping_cart),
+                ListTile(
+                  leading: const Icon(Icons.compare_arrows, size: 32),
+                  title: Text('OPERACIONES', style: Theme.of(context).textTheme.titleLarge),
+                  trailing: CircleAvatar(
+                    backgroundColor: const Color(0xFFFFC107),
+                    child: IconButton(
+                      icon: const Icon(Icons.shopping_cart, color: Color(0xFF0D47A1)),
                       onPressed: () => Navigator.of(context).pushNamed(RouteGenerator.mercadoPage),
                     ),
-                  ],
+                  ),
                 ),
                 operacionesOn.isEmpty
                     ? const Text('Sin datos de operaciones.\n'
-                        'Ordena transacciones en el mercado para seguir el rendimiento de tu inversión.')
+                        'Ordena transacciones en el mercado para seguir la evolución de tu inversión.')
                     : Column(
+                        //crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const Align(
-                            alignment: Alignment.centerLeft,
-                            child: Padding(
-                              padding: EdgeInsets.only(left: 20),
-                              child: Text(
-                                'INVERSIÓN',
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                          FittedBox(
+                            fit: BoxFit.fill,
+                            child: DataTable(
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.blue, width: 2),
+                                borderRadius: BorderRadius.circular(10),
                               ),
-                            ),
-                          ),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: FractionallySizedBox(
-                              widthFactor: 0.7,
-                              child: Column(
-                                children: [
-                                  Row(
-                                    children: [
-                                      const Text('Importe'),
-                                      const Spacer(),
-                                      Text(
-                                        NumberFormat.decimalPattern('es').format(_getInversion()),
-                                        style: const TextStyle(fontWeight: FontWeight.w700),
-                                      ),
-                                    ],
-                                  ),
-                                  Row(
-                                    children: [
-                                      const Text('Fecha inicio'),
-                                      const Spacer(),
-                                      Text(FechaUtil.epochToString(operacionesOn.first.date)),
-                                    ],
-                                  ),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      const Text('Valor inicio'),
-                                      const Spacer(),
-                                      Text(NumberFormat.decimalPattern('es')
-                                          .format(operacionesOn.first.precio)),
-                                    ],
-                                  ),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      const Text('Participaciones'),
-                                      const Spacer(),
-                                      Text(NumberFormat.decimalPattern('es')
-                                          .format(_getParticipaciones())),
-                                    ],
-                                  ),
-                                ],
+                              //headingRowHeight: 0,
+                              columnSpacing: 20,
+                              dataRowHeight: 70,
+                              //horizontalMargin: 10,
+                              headingRowColor:
+                                  MaterialStateColor.resolveWith((states) => Colors.blue),
+                              headingTextStyle: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
                               ),
-                            ),
-                          ),
-                          const Align(
-                            alignment: Alignment.centerLeft,
-                            child: Padding(
-                              padding: EdgeInsets.only(left: 20),
-                              child: Text(
-                                'RESULTADO',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: FractionallySizedBox(
-                              widthFactor: 0.7,
-                              child: Column(
-                                children: [
-                                  Row(
-                                    children: [
-                                      const Text('Importe'),
-                                      const Spacer(),
-                                      Text(
-                                        NumberFormat.decimalPattern('es').format(_getPatrimonio()),
-                                        //NumberFormat("#,###.0#", "es").format(_getPatrimonio()),
-                                        style: const TextStyle(fontWeight: FontWeight.w700),
-                                      ),
-                                    ],
-                                  ),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      const Text('Fecha'),
-                                      const Spacer(),
-                                      Text(FechaUtil.epochToString(valoresOn.first.date)),
-                                    ],
-                                  ),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      const Text('Valor liquidativo'),
-                                      const Spacer(),
-                                      RichText(
-                                        text: TextSpan(
-                                          text: NumberFormat.decimalPattern('es')
-                                              .format(valoresOn.first.precio),
-                                          style: DefaultTextStyle.of(context).style,
-                                          children: <TextSpan>[
-                                            const TextSpan(text: '('),
-                                            TextSpan(
-                                              /*text: (valoresOn.first.precio -
-                                                      operacionesOn.first.precio)
-                                                  .toStringAsFixed(2),*/
-                                              text: NumberFormat.decimalPattern('es').format(
-                                                  valoresOn.first.precio -
-                                                      operacionesOn.first.precio),
-                                              style: TextStyle(
-                                                  color: valoresOn.first.precio -
-                                                              operacionesOn.first.precio <
-                                                          0
-                                                      ? Colors.red
-                                                      : Colors.green),
-                                            ),
-                                            const TextSpan(text: ')'),
-                                          ],
-                                        ),
-                                      )
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const Align(
-                            alignment: Alignment.centerLeft,
-                            child: Padding(
-                              padding: EdgeInsets.only(left: 20),
-                              child: Text('BALANCE', style: TextStyle(fontWeight: FontWeight.bold)),
-                            ),
-                          ),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: FractionallySizedBox(
-                              widthFactor: 0.7,
-                              child: Column(
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      const Text('Diferencia'),
-                                      const Spacer(),
-                                      Text(
-                                        NumberFormat.decimalPattern('es').format(_getBalance()),
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            color: _getBalance() < 0 ? Colors.red : Colors.green),
-                                      ),
-                                    ],
-                                  ),
-                                  Row(
-                                    children: [
-                                      const Text('Rentabilidad'),
-                                      const Spacer(),
-                                      Text(
-                                        NumberFormat.decimalPercentPattern(
-                                                locale: 'es', decimalDigits: 2)
-                                            .format(_getRentabilidad()),
-                                        style: TextStyle(
-                                            color: _getBalance() < 0 ? Colors.red : Colors.green),
-                                      ),
-                                    ],
-                                  ),
-                                  Row(
-                                    children: [
-                                      const Text('TAE'),
-                                      const Spacer(),
-                                      FittedBox(
-                                        child: Text(
-                                          NumberFormat.decimalPercentPattern(
-                                                  locale: 'es', decimalDigits: 2)
-                                              .format(_getTae()),
-                                          //NumberFormat.compact(locale: 'es').format(_getTae()),
-                                          style: TextStyle(
-                                              color: _getTae() < 0 ? Colors.red : Colors.green),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              'OPERACIONES',
-                              style: Theme.of(context).textTheme.titleMedium,
+                              dataTextStyle: const TextStyle(fontSize: 18, color: Colors.black),
+                              columns: _createColumns(),
+                              rows: _createRows(),
                             ),
                           ),
                           const SizedBox(height: 10),
-                          Container(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            decoration: const BoxDecoration(
-                              color: Colors.blue,
-                              borderRadius: BorderRadius.all(Radius.circular(4)),
-                            ),
-                            //color: Colors.blue, // Color(0xFFFFC107)
-                            child: Row(
-                              children: const [
-                                Expanded(
-                                    flex: 2,
-                                    child: Text(
-                                      'FECHA',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold, color: Color(0xFFFFFFFF)),
-                                    )),
-                                Expanded(
-                                    flex: 1,
-                                    child: Text(
-                                      'TIPO',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold, color: Color(0xFFFFFFFF)),
-                                    )),
-                                Expanded(
-                                    flex: 2,
-                                    child: Text(
-                                      'PART.',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold, color: Color(0xFFFFFFFF)),
-                                    )),
-                                Expanded(
-                                    flex: 2,
-                                    child: Text(
-                                      'PRECIO',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold, color: Color(0xFFFFFFFF)),
-                                    )),
-                                Expanded(
-                                    flex: 3,
-                                    child: Text(
-                                      'IMPORTE',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold, color: Color(0xFFFFFFFF)),
-                                    )),
-                              ],
-                            ),
-                          ),
-                          ListView.separated(
-                            padding: const EdgeInsets.only(top: 14),
-                            separatorBuilder: (context, index) => const Divider(
-                                color: Color(0xFF9E9E9E), height: 24, indent: 10, endIndent: 10),
-                            shrinkWrap: true,
-                            physics: const ClampingScrollPhysics(),
-                            itemCount: operacionesOn.length,
-                            itemBuilder: (context, index) {
-                              String tipoOp = operacionesOn[index].tipo == 1 ? 'S' : 'R';
-                              return Row(
-                                children: [
-                                  Expanded(
-                                    flex: 2,
-                                    child: Text(
-                                      FechaUtil.epochToString(operacionesOn[index].date),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
-                                  Expanded(
-                                    flex: 1,
-                                    child: Text(tipoOp,
-                                        style: Theme.of(context).textTheme.labelSmall,
-                                        textAlign: TextAlign.center),
-                                  ),
-                                  Expanded(
-                                    flex: 2,
-                                    child: Text(
-                                      NumberFormat.decimalPattern('es')
-                                          .format(operacionesOn[index].participaciones),
-                                      //'${operacionesOn[index].participaciones}',
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
-                                  Expanded(
-                                    flex: 2,
-                                    child: Text(
-                                      NumberFormat.decimalPattern('es')
-                                          .format(operacionesOn[index].precio),
-                                      //'${operacionesOn[index].precio}',
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
-                                  Expanded(
-                                    flex: 3,
-                                    child: Text(
-                                      NumberFormat.decimalPattern('es').format(
-                                          (operacionesOn[index].participaciones *
-                                              operacionesOn[index].precio)),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
                         ],
                       ),
               ],
             ),
           ),
         ),
-
-        /*Card(
-          child: Column(
-            children: [
-              */ /*ListTile(
-                title: fondoOn.participaciones > 0
-                    //? Text('Patrimonio: ${fondoOn.participaciones * fondoOn.lastPrecio!}')
-                    ? Text('Patrimonio: ${fondoOn.participaciones * valoresOn.first.precio}')
-                    : const Text('Patrimonio: Sin datos'),
-                subtitle: fondoOn.participaciones > 0
-                    ? Text('Participaciones: ${fondoOn.participaciones}')
-                    : const Text(
-                        'Subscribe participaciones de este Fondo para seguir el rendimiento de tu inversión'),
-                // TODO: nueva ventana con Fecha / participaciones y VL
-                trailing: IconButton(
-                  icon: const Icon(Icons.shopping_cart, color: Color(0xFF2196F3)),
-                  onPressed: () => Navigator.of(context).pushNamed(RouteGenerator.mercadoPage),
-                ),
-              ),*/ /*
-              ElevatedButton(
-                  child: const Icon(Icons.shopping_cart),
-                  onPressed: () => Navigator.of(context).pushNamed(RouteGenerator.mercadoPage)),
-              if (operacionesOn.isNotEmpty)
-                Text('Participaciones: ${operacionesOn.first.participaciones}'),
-              if (operacionesOn.isNotEmpty) Text('Participaciones: ${operacionesOn.first.tipo}'),
-              const SizedBox(height: 10),
-              */ /*if (fondoOn.participaciones != 0)
-                const ListTile(
-                  title: Text('Rendimiento:'),
-                  isThreeLine: true,
-                  subtitle: Text('Rentabilidad: \nTAE: '),
-                ),*/ /*
-            ],
+        const SizedBox(height: 10),
+        if (operacionesOn.isNotEmpty)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.savings, size: 32), // Icons.balance
+                    title: Text('BALANCE', style: Theme.of(context).textTheme.titleLarge),
+                    trailing: Chip(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      backgroundColor: const Color(0xFF0D47A1),
+                      avatar: const Icon(Icons.calendar_today, size: 20, color: Color(0xFFFFFFFF)),
+                      label: Text(
+                        FechaUtil.epochToString(
+                          valoresOn.first.date,
+                          formato: 'dd/MM/yy',
+                        ),
+                        style: const TextStyle(color: Color(0xFFFFFFFF)),
+                      ),
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.center,
+                    child: FractionallySizedBox(
+                      widthFactor: 0.8,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              const Text('Inversión', style: TextStyle(fontSize: 18)),
+                              const Spacer(),
+                              Text(
+                                  NumberFormat.decimalPattern('es')
+                                      .format(double.parse(_getInversion().toStringAsFixed(2))),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 18,
+                                  ))
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              const Text('Resultado', style: TextStyle(fontSize: 18)),
+                              const Spacer(),
+                              Text(
+                                  NumberFormat.decimalPattern('es')
+                                      .format(double.parse(_getPatrimonio().toStringAsFixed(2))),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 18,
+                                  ))
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              const Text('Rendimiento', style: TextStyle(fontSize: 18)),
+                              const Spacer(),
+                              Text(
+                                  NumberFormat.decimalPattern('es')
+                                      .format(double.parse(_getBalance().toStringAsFixed(2))),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    color: _getBalance() < 0 ? Colors.red : Colors.green,
+                                    fontSize: 18,
+                                  ))
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              const Text('Rentabilidad', style: TextStyle(fontSize: 18)),
+                              const Spacer(),
+                              Text(
+                                  NumberFormat.decimalPercentPattern(
+                                    locale: 'es',
+                                    decimalDigits: 2,
+                                  ).format(_getRentabilidad()),
+                                  style: TextStyle(
+                                    color: _getBalance() < 0 ? Colors.red : Colors.green,
+                                    fontSize: 18,
+                                  )),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              const Text('TAE', style: TextStyle(fontSize: 18)),
+                              const Spacer(),
+                              FittedBox(
+                                child: Text(
+                                    NumberFormat.decimalPercentPattern(
+                                      locale: 'es',
+                                      decimalDigits: 2,
+                                    ).format(_getTae()),
+                                    style: TextStyle(
+                                      color: _getTae() < 0 ? Colors.red : Colors.green,
+                                      fontSize: 18,
+                                    )),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),*/
       ],
     );
   }
